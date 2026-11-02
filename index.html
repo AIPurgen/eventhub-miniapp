@@ -655,7 +655,7 @@ async function api(entity, action, data = {}) {
         const raw = await res.text();
         let parsed; try { parsed = raw ? JSON.parse(raw) : null; } catch (_) { parsed = raw; }
         if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
-        if (parsed === null || parsed === '' || (Array.isArray(parsed) && parsed.length === 0)) {
+        if (parsed === null || parsed === '') {
             return { success: false, error: 'Сервер вернул пустой ответ', http_status: res.status, empty_response: true };
         }
         return parsed;
@@ -671,7 +671,9 @@ async function loadModerators() {
     const select = document.getElementById('eventModeratorInput');
     try {
         const res = await api("users", "get_moderators");
+        if (res?.success === false) throw new Error(res.error || res.message || 'Ошибка webhook');
         const mods = Array.isArray(res) ? res : (res?.moderators || []);
+        if (!Array.isArray(mods)) throw new Error('Webhook вернул неверный формат списка модераторов');
         select.innerHTML = '<option value="">Не выбран (я модератор)</option>';
         mods.forEach(m => {
             const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Без имени';
@@ -682,7 +684,9 @@ async function loadModerators() {
             select.appendChild(opt);
         });
     } catch(e) {
-        select.innerHTML = '<option value="">Ошибка загрузки модераторов</option>';
+        console.error('get_moderators:', e);
+        select.innerHTML = '<option value="">Ошибка webhook: модераторы не загружены</option>';
+        notifyUser(e?.message || 'Ошибка обращения к webhook');
     }
 }
 
@@ -884,10 +888,9 @@ async function init() {
     user = tg?.initDataUnsafe?.user || user || {};
     let authRes = accessToken ? await api('auth', 'validate_session') : null;
     let authenticatedUser = authUserFromResponse(authRes);
-    // Текущая Telegram-ветка n8n может вернуть HTTP 200 с пустым телом после upsert_user.
-    // В этом случае используем подписанный Telegram-контекст и передаём user дальше в auth.user.
-    if (!authenticatedUser && telegramInitData && user?.id) authenticatedUser = telegramUserFromBridge();
     if (!authenticatedUser && (telegramInitData || user?.id)) { accessToken = ''; sessionStorage.removeItem('eventhub_access_token'); authRes = await api('auth', 'validate'); authenticatedUser = authUserFromResponse(authRes); }
+    // Текущая Telegram-ветка n8n может вернуть HTTP 200 с пустым телом после upsert_user.
+    // Используем локальный Telegram-контекст только после попытки получить профиль из backend.
     if (!authenticatedUser && telegramInitData && user?.id) authenticatedUser = telegramUserFromBridge();
     if (!authenticatedUser) {
         setAuthVisible(true);
@@ -903,6 +906,12 @@ async function init() {
     document.getElementById('fab').classList.toggle('hidden', !isAdmin);
 
     const eventsRes = await api("events", "list");
+    if (eventsRes?.success === false) {
+        events = [];
+        render();
+        notifyUser(`Ошибка webhook: ${eventsRes.error || 'не удалось получить события'}`);
+        return;
+    }
     events = Array.isArray(eventsRes) ? eventsRes : (eventsRes?.events || []);
     render();
 }
