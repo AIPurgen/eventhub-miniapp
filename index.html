@@ -380,8 +380,7 @@
 .event-detail-date{margin:8px 0 18px;color:var(--secondary);font-size:15px;text-transform:lowercase}
 .event-detail-info{margin-bottom:28px;color:var(--text);font-size:17px;line-height:1.6}.event-detail-info>div{margin-bottom:12px}.event-detail-info>div:last-child{margin-bottom:0}
 .event-detail-section{margin:24px 0 16px}.event-detail-section-title{margin-bottom:16px;font-size:18px;font-weight:800}.event-detail-empty{display:none;padding:34px 0;color:var(--secondary);font-size:15px;text-align:center}
-.guest-block{margin:28px 0 34px}.guest-hint{margin-bottom:12px;color:var(--secondary);font-size:14px;text-align:center}.guest-controls{display:flex;align-items:center;justify-content:center;gap:24px}
-.guest-control{width:52px;height:52px;border:1px solid var(--gray);border-radius:50%;background:var(--lightgray);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;transition:transform .2s,background .2s}.guest-control:active{transform:scale(.92)}.guest-count{min-width:40px;color:var(--text);font-size:28px;font-weight:800;text-align:center}
+.participants-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.participants-section-head .event-detail-section-title{margin:0;padding-top:2px}.event-guests-summary{display:flex;align-items:center;gap:10px;color:var(--text)}.event-guests-label{font-size:18px;font-weight:800;line-height:1.2;white-space:nowrap}.event-guests-label strong{font-size:18px;line-height:1;font-weight:800}.event-my-guests{border:0;padding:0;background:transparent;color:var(--text);font:inherit;font-size:18px;font-weight:800;line-height:1.2;white-space:nowrap;cursor:pointer}.event-my-guests strong{font-size:18px;font-weight:800}.event-my-guests:active,.event-guests-logo:active{transform:scale(.94)}.participants-content-row{display:flex;align-items:flex-start;gap:20px;min-height:96px}.participants-content-row>#detailAvatars{flex:1;min-width:0}.event-guests-card{width:72px;height:96px;flex:0 0 72px;display:flex;align-items:flex-start;justify-content:flex-start;color:var(--text)}.event-guests-logo{width:72px;height:72px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:0;padding:0;border-radius:50%;background:var(--event-soft,var(--lightgray));box-shadow:0 4px 12px rgba(0,0,0,.1);cursor:pointer}.event-guests-icon{width:100%;height:100%;display:block;fill:none;stroke:var(--event-accent,var(--accent));stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.guest-block{display:none!important}
 .event-detail-actions{justify-content:space-between;padding-left:clamp(20px,4vw,40px);padding-right:clamp(20px,4vw,40px);background:var(--card-solid);border-top:1px solid var(--gray);box-shadow:0 -12px 30px rgba(50,65,125,.06)}
 .event-detail-action,.event-detail-delete{border:0;background:transparent;padding:10px 8px;font-weight:800;cursor:pointer}.event-detail-action{color:var(--accent);font-size:17px}.event-detail-delete{display:none;color:var(--red);font-size:16px}.event-detail-action:active,.event-detail-delete:active{transform:scale(.97)}
 @media (max-width:560px){.event-detail-panel{max-height:90dvh;border-radius:28px 28px 0 0}.event-detail-actions{gap:12px}.event-detail-action,.event-detail-delete{font-size:15px}}*{box-sizing:border-box}html{background:var(--bg)}body{background:radial-gradient(circle at 8% -10%,rgba(103,93,246,.22),transparent 34%),radial-gradient(circle at 100% 10%,rgba(38,157,255,.16),transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;letter-spacing:-.01em;transition:background .35s ease,color .25s ease}button,input,textarea,select{font:inherit}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.event-card:focus-visible{outline:3px solid rgba(91,92,240,.35);outline-offset:3px}.container{max-width:760px;padding:24px clamp(18px,4vw,40px) calc(132px + env(safe-area-inset-bottom));padding-top:calc(24px + env(safe-area-inset-top))}.header{align-items:flex-start;gap:18px;margin-bottom:28px}.header-copy{min-width:0}.header-copy .eyebrow{display:block;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}.header h1{font-size:clamp(32px,7vw,48px);letter-spacing:-.06em;line-height:.98;margin:0}.header-copy p{color:var(--secondary);margin:12px 0 0;font-size:15px;line-height:1.45;max-width:390px}.header-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.admin-badge{background:linear-gradient(135deg,var(--green),#4cc7ff);padding:8px 12px;box-shadow:0 8px 20px rgba(24,168,120,.2)}.theme-toggle{width:42px;height:42px;border:1px solid var(--gray);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);transition:transform .2s}.theme-toggle:active{transform:scale(.92)}#eventsList{display:grid;gap:16px}.event-card{position:relative;display:grid;grid-template-columns:76px minmax(0,1fr);gap:18px;padding:16px;min-height:150px;margin:0;border:1px solid rgba(255,255,255,.45);border-radius:26px;background:var(--card);box-shadow:var(--shadow-soft);overflow:hidden;cursor:pointer;backdrop-filter:blur(22px);animation:eventAppear .45s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s,box-shadow .25s,border-color .25s}.event-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:rgba(91,92,240,.28)}.event-card:active{transform:scale(.985)}.event-date-block{display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:stretch;min-height:116px;border-radius:19px;background:linear-gradient(155deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 12px 24px rgba(91,92,240,.24);text-align:center}.event-date-block .day{font-size:31px;font-weight:850;line-height:1;letter-spacing:-.06em}.event-date-block .month{margin-top:5px;font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.12em;opacity:.88}.event-date-block .time{margin-top:11px;padding-top:8px;width:52px;border-top:1px solid rgba(255,255,255,.32);font-size:13px;font-weight:700}.event-copy{min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding:3px 2px 2px 0}.event-title{font-size:21px;line-height:1.16;letter-spacing:-.035em;margin:0;overflow-wrap:anywhere}.event-description{color:var(--secondary);font-size:14px;line-height:1.42;margin:8px 0 12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.meta-pill,.price{display:inline-flex;align-items:center;padding:7px 10px;border-radius:10px;font-size:12px;font-weight:800}.meta-pill{gap:5px;background:var(--lightgray);color:var(--secondary)}.price{background:rgba(91,92,240,.12);color:var(--accent)}.price.free{background:rgba(24,168,120,.13);color:var(--green)}.event-status{margin-left:auto;color:var(--green);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.empty{padding:82px 28px;border:1px dashed var(--gray);border-radius:26px;background:var(--card);box-shadow:var(--shadow-soft)}.empty::before{content:'✦';display:block;color:var(--accent);font-size:28px;margin-bottom:13px}.fab{right:max(20px,calc((100vw - 760px)/2 + 20px));bottom:calc(26px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 16px 32px rgba(91,92,240,.32)}.auth-shell{background:radial-gradient(circle at 15% 5%,rgba(91,92,240,.30),transparent 38%),radial-gradient(circle at 100% 100%,rgba(72,166,255,.18),transparent 34%),var(--bg);padding:20px}.auth-card{background:var(--card);border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);backdrop-filter:blur(26px)}.auth-brand{font-size:34px;background:linear-gradient(135deg,var(--text),var(--accent));color:transparent;background-clip:text;-webkit-background-clip:text}.auth-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2))}.datetime-modal,.picker-overlay{background:rgba(13,17,32,.52);backdrop-filter:blur(8px)}.datetime-panel,.picker-panel{background:var(--card-solid);box-shadow:var(--shadow)}.fixed-bottom{background:color-mix(in srgb,var(--card-solid) 88%,transparent);backdrop-filter:blur(22px);border-color:var(--gray)}.toast-stack{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:3000;display:grid;gap:8px;width:min(calc(100% - 32px),420px);transform:translateX(-50%);pointer-events:none}.toast{padding:13px 16px;border:1px solid rgba(255,255,255,.35);border-radius:16px;background:rgba(24,32,51,.92);color:#fff;box-shadow:var(--shadow);font-size:14px;font-weight:700;animation:toastIn .3s ease both}.skeleton-list{display:grid;gap:16px}.skeleton-card{height:150px;border-radius:26px;background:linear-gradient(90deg,var(--lightgray) 25%,rgba(255,255,255,.42) 50%,var(--lightgray) 75%);background-size:220% 100%;animation:shimmer 1.25s infinite}@keyframes eventAppear{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes toastIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes shimmer{to{background-position:-220% 0}}@media (min-width:640px){.event-card{grid-template-columns:92px minmax(0,1fr);padding:18px}.event-date-block{min-height:128px}.event-date-block .day{font-size:36px}}@media (max-width:460px){.header{margin-bottom:22px}.header-copy p{font-size:14px}.event-card{grid-template-columns:64px minmax(0,1fr);gap:13px;padding:13px;border-radius:22px}.event-date-block{min-height:118px;border-radius:16px}.event-date-block .day{font-size:27px}.event-title{font-size:18px}.event-status{width:100%;margin-left:0}}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}
@@ -434,8 +433,48 @@
 .pulse-bottom-nav{z-index:1100;transition:opacity .18s,transform .18s,visibility .18s}.pulse-modal-open .pulse-bottom-nav{opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,16px)}body.pulse-modal-open{overflow:hidden}.pulse-modal-open .auth-logout{z-index:1000}
 .pulse-card-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%;min-width:0}.pulse-card-tool{min-width:0;width:100%;height:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px;line-height:42px}.pulse-card-tool.is-liked{color:#e84e43}
 .event-detail-action.is-full,.event-detail-action:disabled{opacity:.55!important;background:var(--secondary)!important;cursor:not-allowed!important}
-</style>
-</head>
+
+.social-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.social-action{border:0;border-radius:14px;padding:12px 10px;background:var(--lightgray);color:var(--text);font:600 14px inherit;cursor:pointer}
+.social-action.primary{background:var(--accent);color:#fff}
+.social-action:active{transform:scale(.98)}
+.social-signal{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.social-signal span{padding:7px 10px;border-radius:999px;background:var(--lightgray);font-size:12px;color:var(--secondary)}
+.social-signal span strong{color:var(--text)}
+.social-invite-note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(48,184,0,.12);color:var(--text);font-size:13px;line-height:1.4}
+.social-stats{margin-top:14px;padding:14px;border-radius:16px;background:var(--lightgray);border:1px solid rgba(128,128,128,.12)}.social-stats-title{font-weight:700;margin-bottom:10px}.social-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.social-stat{padding:9px 6px;border-radius:12px;background:var(--card);text-align:center}.social-stat strong{display:block;font-size:20px}.social-stat span{font-size:11px;color:var(--secondary)}.social-stats-refresh{margin-top:10px;border:0;background:transparent;color:var(--accent);font:600 12px inherit;cursor:pointer;padding:0}</style>
+<style>
+.organizer-dashboard{display:none;margin:0 0 24px;padding:20px;border-radius:26px;background:var(--card);box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.organizer-dashboard.show{display:block}.organizer-dashboard-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.organizer-dashboard-title{font-size:24px;font-weight:800;letter-spacing:-.04em}.organizer-dashboard-close{border:0;background:var(--lightgray);color:var(--text);border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer}.organizer-dashboard-loading{color:var(--secondary);padding:22px 0;text-align:center}.organizer-dashboard-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}.organizer-dashboard-total{padding:12px 7px;border-radius:15px;background:var(--lightgray);text-align:center}.organizer-dashboard-total strong{display:block;font-size:22px}.organizer-dashboard-total span{font-size:11px;color:var(--secondary)}.organizer-dashboard-list{display:grid;gap:10px}.organizer-event-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px;border:1px solid rgba(128,128,128,.16);border-radius:16px}.organizer-event-name{font-weight:700;line-height:1.2}.organizer-event-date{font-size:12px;color:var(--secondary);margin-top:4px}.organizer-event-metrics{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}.organizer-event-metric{padding:6px 8px;border-radius:999px;background:var(--lightgray);font-size:11px;color:var(--secondary)}.organizer-event-open{margin-top:8px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:0}.organizer-dashboard-button{margin:0 0 18px;width:100%;border:0;border-radius:16px;padding:13px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer}.dark .organizer-dashboard-button{background:#fff;color:#111}.organizer-dashboard-empty{padding:16px 0;color:var(--secondary);text-align:center}@media(max-width:560px){.organizer-dashboard-summary{grid-template-columns:repeat(2,1fr)}.organizer-event-row{grid-template-columns:1fr}.organizer-event-metrics{justify-content:flex-start}}
+</style><style>.organizer-dashboard-button{position:fixed;right:20px;bottom:108px;z-index:101;border:0;border-radius:18px;padding:12px 16px;background:var(--text);color:var(--bg);font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.2);cursor:pointer}.organizer-dashboard-button.hidden{display:none!important}.dark .organizer-dashboard-button{background:#fff;color:#111}</style><style>
+.organizer-dashboard{position:fixed!important;inset:0!important;z-index:2500!important;display:none!important;overflow:auto!important;margin:0!important;padding:calc(14px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))!important;border-radius:0!important;background:var(--bg)!important;box-shadow:none!important}
+.organizer-dashboard.show{display:block!important}.organizer-dashboard .organizer-dashboard-head{position:sticky;top:0;z-index:2;padding:8px 0 16px;background:var(--bg)}
+.organizer-dashboard-button{display:none!important}.organizer-dashboard-nav.hidden{display:none!important}.pulse-bottom-nav button.hidden{display:none!important}
+</style><style>
+.event-detail-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px max(16px,4vw) calc(12px + env(safe-area-inset-bottom))!important;overflow:visible!important}
+.event-detail-actions>*{min-width:0!important;width:100%!important;margin:0!important;border-radius:16px!important;min-height:54px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.15!important}
+.event-detail-action,.event-detail-delete{font-size:14px!important;padding:8px 5px!important}.social-actions{display:contents!important}.social-action{min-width:0!important;width:100%!important;border-radius:16px!important;padding:8px 5px!important;font-weight:800!important;font-size:13px!important;line-height:1.15!important}.social-action.primary{background:var(--accent)!important;color:#fff!important}
+.social-stats{order:99;margin:22px 0 0!important;padding:12px 0 2px!important;border:0!important;border-top:1px solid var(--gray)!important;border-radius:0!important;background:transparent!important}.social-stats-title{display:none!important}.social-stats-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important}.social-stat{min-width:0!important;padding:8px 3px!important;border-radius:13px!important;background:var(--lightgray)!important;text-align:center!important}.social-stat strong{display:block!important;font-size:18px!important;line-height:1.15!important}.social-stat span{display:block!important;font-size:18px!important;line-height:1.15!important}.social-stat .social-stat-label{display:none!important}.social-stats-refresh{display:block!important;margin:9px auto 0!important;padding:4px 8px!important;border:0!important;background:transparent!important;color:var(--secondary)!important;font-size:18px!important;line-height:1!important}.social-stat[title]{cursor:help}@media(max-width:560px){.event-detail-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important;padding-left:12px!important;padding-right:12px!important}.event-detail-actions>*{min-height:58px!important}.social-stat strong{font-size:17px!important}.social-stat span{font-size:17px!important}}
+</style><style>
+.participant-profile-modal{position:fixed;inset:0;z-index:2800;display:none;align-items:flex-end;justify-content:center;background:rgba(22,26,43,.48);backdrop-filter:blur(10px);padding:18px}.participant-profile-modal.show{display:flex;animation:participantBackdropIn .24s ease both}.participant-profile-card{position:relative;width:min(100%,520px);max-height:84vh;overflow:auto;border:1px solid rgba(255,255,255,.7);border-radius:30px 30px 0 0;background:var(--card-solid,var(--card));color:var(--text);padding:0 22px 24px;box-shadow:0 -18px 60px rgba(32,36,58,.25);animation:participantSheetIn .28s ease both}.participant-profile-card:before{content:'';display:block;width:42px;height:5px;margin:10px auto 16px;border-radius:999px;background:var(--secondary);opacity:.32}.participant-profile-head{position:relative;display:flex;align-items:center;gap:14px;margin:0 -22px;padding:24px 22px 22px;min-height:152px;overflow:hidden;color:#fff;background:radial-gradient(circle at 92% 6%,rgba(255,255,255,.24),transparent 28%),linear-gradient(135deg,#20243a,#178b73)}.participant-profile-head:after{content:'✦';position:absolute;right:14px;bottom:-28px;color:rgba(255,255,255,.14);font-size:120px;line-height:1;transform:rotate(14deg)}.participant-profile-avatar{position:relative;z-index:2;width:76px;height:76px;flex:0 0 76px;border:4px solid rgba(255,255,255,.85);border-radius:24px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6b57,#9b8cff);color:#fff;font-size:25px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.22)}.participant-profile-avatar img{width:100%;height:100%;object-fit:cover}.participant-profile-name{position:relative;z-index:2;max-width:230px;font-size:24px;line-height:1.04;font-weight:950;letter-spacing:-.045em}.participant-profile-sub{position:relative;z-index:2;color:rgba(255,255,255,.74);font-size:13px;margin-top:7px}.participant-profile-close{position:relative;z-index:3;margin-left:auto;align-self:flex-start;border:0;border-radius:999px;padding:10px 13px;background:rgba(255,255,255,.18);color:#fff;font-weight:800;cursor:pointer}.participant-profile-close:active{transform:scale(.96)}.participant-profile-stats{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:22px 0 0}.participant-profile-stat{min-height:84px;padding:13px 7px;border:1px solid var(--gray);border-radius:18px;background:var(--lightgray);text-align:center;transition:transform .2s,background .2s}.participant-profile-stat:hover{transform:translateY(-2px);background:var(--card)}.participant-profile-stat strong{display:block;color:var(--text);font-size:21px;line-height:1.15;font-weight:950}.participant-profile-stat span{display:block;color:var(--secondary);font-size:11px;line-height:1.2;margin-top:7px}.participant-profile-card::-webkit-scrollbar{width:6px}.participant-profile-card::-webkit-scrollbar-thumb{border-radius:99px;background:var(--gray)}@keyframes participantSheetIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes participantBackdropIn{from{opacity:0}to{opacity:1}}@media(max-width:420px){.participant-profile-modal{padding:0}.participant-profile-card{width:100%;max-height:88vh;border-radius:28px 28px 0 0;padding-left:16px;padding-right:16px}.participant-profile-head{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;min-height:145px}.participant-profile-name{font-size:22px;max-width:170px}.participant-profile-avatar{width:68px;height:68px;flex-basis:68px}.participant-profile-stats{grid-template-columns:repeat(2,1fr);gap:8px;margin-top:18px}.participant-profile-stat{min-height:82px}}
+</style><style>
+.event-detail-panel{--event-accent:#ff6b57;--event-deep:#20243a;--event-soft:#fff1ec;background:var(--card-solid,var(--card))!important;overflow:hidden!important}.event-detail-panel.event-theme-night{--event-accent:#ff7451;--event-deep:#27234d;--event-soft:#f1edff}.event-detail-panel.event-theme-mint{--event-accent:#178b73;--event-deep:#153e43;--event-soft:#e8f8f0}.event-detail-panel.event-theme-sun{--event-accent:#d68a00;--event-deep:#4c3512;--event-soft:#fff5d8}.event-detail-panel.event-theme-ocean{--event-accent:#2678c9;--event-deep:#15365f;--event-soft:#e9f3ff}.event-detail-header{position:relative;min-height:168px;padding:24px 22px 22px;color:#fff;background:radial-gradient(circle at 90% 5%,rgba(255,255,255,.24),transparent 28%),linear-gradient(135deg,var(--event-deep),var(--event-accent));overflow:hidden}.event-detail-header:after{content:'✦';position:absolute;right:18px;bottom:-16px;font-size:118px;line-height:1;color:rgba(255,255,255,.14);transform:rotate(12deg)}.event-detail-header .datetime-btn{position:relative;z-index:2;color:#fff!important;padding:0}.event-detail-header .datetime-title{position:relative;z-index:2;margin-top:26px;max-width:82%;font-size:clamp(28px,7vw,42px);line-height:.98;letter-spacing:-.07em;font-weight:950}.event-detail-kicker{position:relative;z-index:2;margin-top:8px;color:rgba(255,255,255,.76);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.event-detail-content{padding:0 0 132px!important}.event-detail-body{padding:0 clamp(20px,4vw,40px)!important}.event-date-card{display:flex;align-items:center;gap:14px;margin:18px 0 22px;padding:14px 16px;border-radius:20px;background:var(--event-soft);border:1px solid color-mix(in srgb,var(--event-accent) 22%,transparent)}.event-date-day{min-width:54px;color:var(--event-accent);font-size:28px;font-weight:950;line-height:.9;text-align:center}.event-date-day small{display:block;margin-top:5px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.event-date-copy{color:var(--text);font-size:15px;font-weight:800;line-height:1.35}.event-date-copy span{display:block;color:var(--secondary);font-size:13px;font-weight:600;margin-top:3px}.event-description-block{margin:0 0 22px}.event-section-label{margin-bottom:8px;color:var(--secondary);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.event-description-text{color:var(--text);font-size:18px;line-height:1.5;letter-spacing:-.02em}.event-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 24px}.event-fact{padding:13px 14px;border-radius:17px;background:var(--lightgray);border:1px solid var(--gray)}.event-fact strong{display:block;color:var(--text);font-size:17px}.event-fact span{display:block;margin-top:4px;color:var(--secondary);font-size:11px}.event-theme-editor{display:none;margin:-8px 0 20px;padding:14px;border-radius:18px;background:var(--lightgray);border:1px solid var(--gray)}.event-theme-editor.show{display:block}.event-theme-options{display:flex;gap:8px;flex-wrap:wrap}.event-theme-option{width:32px;height:32px;border:3px solid transparent;border-radius:50%;cursor:pointer}.event-theme-option.active{border-color:var(--text);box-shadow:0 0 0 2px var(--card)}.event-theme-toggle{position:absolute;right:20px;top:22px;z-index:3;border:0;border-radius:999px;padding:8px 11px;background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer}.event-detail-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;padding:12px max(16px,4vw) calc(12px + env(safe-area-inset-bottom))!important}.event-detail-actions .event-detail-action{grid-column:span 1!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions .event-detail-menu{display:flex!important;align-items:center;justify-content:center;border:0;border-radius:16px;background:var(--lightgray);color:var(--secondary);font-weight:900;font-size:13px;cursor:pointer}.event-detail-actions .social-action{min-height:58px!important}.event-detail-actions .event-detail-action{min-height:58px!important}@media(max-width:420px){.event-detail-header{min-height:154px}.event-fact-grid{gap:7px}.event-fact{padding:11px 10px}.event-detail-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important;padding-left:10px!important;padding-right:10px!important}}
+</style><style>
+/* Final event action bar: four actions stay in one balanced row. */
+.event-detail-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important;padding:12px max(12px,3vw) calc(12px + env(safe-area-inset-bottom))!important;background:var(--card-solid,var(--card))!important;border-top:1px solid var(--gray)!important;box-shadow:0 -12px 30px rgba(32,36,58,.08)!important;overflow:visible!important}
+.event-detail-actions>*{grid-column:auto!important;min-width:0!important;width:100%!important;height:58px!important;min-height:58px!important;margin:0!important;border:0!important;border-radius:18px!important;padding:7px 4px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.08!important;font-size:12px!important;font-weight:900!important;box-sizing:border-box!important}
+.event-detail-actions .social-action{background:var(--lightgray)!important;color:var(--text)!important;box-shadow:none!important}.event-detail-actions .social-action.primary{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions .event-detail-action{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions .event-detail-menu{background:var(--lightgray)!important;color:var(--secondary)!important;box-shadow:none!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions>*:active{transform:scale(.96)!important}.event-detail-actions small{font-size:11px!important;font-weight:900!important}
+@media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:8px!important;padding-right:8px!important}.event-detail-actions>*{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important;padding-left:2px!important;padding-right:2px!important}.event-detail-actions small{font-size:10px!important}}
+</style><style>
+/* Stable action layout: social-actions is a real flex item, never display:contents. */
+.event-detail-actions{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;align-items:stretch!important;padding:12px max(10px,2.6vw) calc(12px + env(safe-area-inset-bottom))!important;background:var(--card-solid,var(--card))!important;border-top:1px solid var(--gray)!important;box-shadow:0 -12px 30px rgba(32,36,58,.08)!important;overflow:visible!important}
+.event-detail-actions .social-actions{display:flex!important;flex:2 1 0!important;min-width:0!important;width:auto!important;gap:8px!important;margin:0!important;padding:0!important;align-items:stretch!important}
+.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{flex:1 1 0!important;min-width:0!important;width:auto!important;height:58px!important;min-height:58px!important;margin:0!important;border:0!important;border-radius:18px!important;padding:6px 3px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.05!important;font-size:11px!important;font-weight:900!important;box-sizing:border-box!important}
+.event-detail-actions .social-action{background:var(--lightgray)!important;color:var(--text)!important;box-shadow:none!important}.event-detail-actions .social-action.primary,.event-detail-actions>.event-detail-action{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions>.event-detail-menu{background:var(--lightgray)!important;color:var(--secondary)!important;box-shadow:none!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions>*:active{transform:scale(.96)!important}.event-detail-actions small{display:block!important;font-size:10px!important;font-weight:900!important}
+/* Social guest stepper: one clear decision, one compact control. */
+.guest-block{margin:26px 0 30px!important;padding:16px 14px 14px!important;border:1px solid var(--gray)!important;border-radius:22px!important;background:var(--event-soft,var(--lightgray))!important}.guest-hint{margin:0 0 14px!important;color:var(--text)!important;font-size:13px!important;font-weight:800!important;text-align:left!important}.guest-hint:before{content:'👥  ';color:var(--event-accent,var(--accent))}.guest-controls{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}.guest-control{width:48px!important;height:48px!important;flex:0 0 48px!important;border:1px solid color-mix(in srgb,var(--event-accent,var(--accent)) 22%,var(--gray))!important;border-radius:16px!important;background:var(--card)!important;color:var(--event-accent,var(--accent))!important;font-size:25px!important;font-weight:700!important;box-shadow:0 6px 14px rgba(32,36,58,.08)!important}.guest-count{position:relative!important;min-width:82px!important;color:var(--text)!important;font-size:30px!important;font-weight:950!important;line-height:1!important;text-align:center!important}.guest-count:after{content:'гостей';display:block;margin-top:5px;color:var(--secondary);font-size:11px;font-weight:700;letter-spacing:.02em}.guest-controls:after{content:'Вы + гости';display:block;position:absolute;opacity:0;width:0;height:0}
+@media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:7px!important;padding-right:7px!important}.event-detail-actions .social-actions{gap:5px!important}.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important}.event-detail-actions small{font-size:9px!important}.guest-block{margin-left:0!important;margin-right:0!important}.guest-control{width:44px!important;height:44px!important;flex-basis:44px!important}.guest-count{font-size:28px!important}}
+</style></head>
 <body>
 <div id="authShell" class="auth-shell">
   <section class="auth-card" aria-labelledby="authTitle">
@@ -506,41 +545,7 @@
 </div>
 
 <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА СОБЫТИЯ -->
-<div id="eventDetailModal" class="datetime-modal event-detail-modal">
-    <div class="datetime-panel event-detail-panel">
-        <div class="datetime-header">
-            <button class="datetime-btn" onclick="closeEventDetail()">Закрыть</button>
-            <div class="datetime-title" id="detailTitle">Событие</div>
-            <div></div>
-        </div>
-        <div class="modal-content event-detail-content">
-            <div class="event-detail-body">
-                <div id="detailDate" class="event-detail-date"></div>
-                <div id="detailInfo" class="event-detail-info"></div>
-                <div class="event-detail-section">
-                    <div class="event-detail-section-title">Участники:</div>
-                    <div id="detailAvatars" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:flex-start;"></div>
-                    <div id="noParticipants" class="event-detail-empty">
-                        Пока никто не записался
-                    </div>
-                </div>
-
-                <div id="guestBlock" class="guest-block">
-                    <div id="guestHint" class="guest-hint"></div>
-                    <div class="guest-controls">
-                        <button class="guest-control" onclick="decreaseGuests()">−</button>
-                        <span id="guestCount" class="guest-count">0</span>
-                        <button class="guest-control" onclick="increaseGuests()">+</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="fixed-bottom event-detail-actions">
-            <button id="detailActionBtn" class="event-detail-action"></button>
-            <button id="detailDeleteBtn" class="event-detail-delete">Удалить событие</button>
-        </div>
-    </div>
-</div>
+<div id="eventDetailModal" class="datetime-modal event-detail-modal"><div class="datetime-panel event-detail-panel"><div class="event-detail-header"><button class="datetime-btn" onclick="closeEventDetail()">Закрыть</button><button id="eventThemeToggle" class="event-theme-toggle" type="button" onclick="toggleEventThemeEditor()" aria-label="Оформление">⋯</button><div class="datetime-title" id="detailTitle">Событие</div><div id="detailKicker" class="event-detail-kicker">Событие · VKOR</div></div><div class="modal-content event-detail-content"><div class="event-detail-body"><div id="eventThemeEditor" class="event-theme-editor"><div class="event-section-label">Оформление события</div><div class="event-theme-options"><button class="event-theme-option" data-theme="coral" style="background:linear-gradient(135deg,#20243a,#ff6b57)" onclick="setEventTheme('coral')" aria-label="Коралловая тема"></button><button class="event-theme-option" data-theme="night" style="background:linear-gradient(135deg,#27234d,#ff7451)" onclick="setEventTheme('night')" aria-label="Ночная тема"></button><button class="event-theme-option" data-theme="mint" style="background:linear-gradient(135deg,#153e43,#178b73)" onclick="setEventTheme('mint')" aria-label="Мятная тема"></button><button class="event-theme-option" data-theme="sun" style="background:linear-gradient(135deg,#4c3512,#d68a00)" onclick="setEventTheme('sun')" aria-label="Солнечная тема"></button><button class="event-theme-option" data-theme="ocean" style="background:linear-gradient(135deg,#15365f,#2678c9)" onclick="setEventTheme('ocean')" aria-label="Морская тема"></button></div></div><div id="detailDate" class="event-detail-date"></div><div id="detailInfo" class="event-detail-info"></div><div class="event-detail-section"><div class="participants-section-head"><div class="event-detail-section-title">Участники</div><div class="event-guests-summary" aria-live="polite"><span class="event-guests-label">Гости: <strong id="eventTotalGuests">0</strong></span><button id="eventMyGuests" class="event-my-guests" type="button" onclick="decreaseGuests()" aria-label="Уменьшить количество моих гостей">Мои <strong id="eventMyGuestCount">0</strong></button></div></div><div class="participants-content-row"><div id="detailAvatars" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:flex-start;"></div><div class="event-guests-card"><button class="event-guests-logo" type="button" onclick="increaseGuests()" aria-label="Добавить одного гостя"><svg class="event-guests-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="10" r="4.2"></circle><circle cx="22" cy="11.5" r="3.3"></circle><path d="M4.5 24c.5-5 3.1-7.4 7.5-7.4s7 2.4 7.5 7.4"></path><path d="M18.2 18.7c1-.9 2.2-1.4 3.8-1.4 3.2 0 5.1 2.1 5.5 6.7"></path></svg></button></div><div id="noParticipants" class="event-detail-empty">Пока никто не записался</div></div></div></div></div><div class="fixed-bottom event-detail-actions"><button id="detailActionBtn" class="event-detail-action"></button><button id="detailDeleteBtn" class="event-detail-delete">Удалить событие</button><button id="eventDetailMenu" class="event-detail-menu" type="button" onclick="toggleEventAdminMenu()">⋯ Меню</button></div></div></div>
 
 <!-- ПИКЕР ДАТЫ -->
 <div id="datePicker" class="picker-overlay">
@@ -583,28 +588,13 @@
   </div>
 </section>
 
+<section id="participantProfileModal" class="participant-profile-modal" onclick="if(event.target===this)closeParticipantProfile()"><div class="participant-profile-card"><div class="participant-profile-head"><div id="participantProfileAvatar" class="participant-profile-avatar">?</div><div><div id="participantProfileName" class="participant-profile-name">Участник</div><div id="participantProfileSub" class="participant-profile-sub"></div></div><button class="participant-profile-close" type="button" onclick="closeParticipantProfile()">Закрыть</button></div><div id="participantProfileStats" class="participant-profile-stats"><div class="participant-profile-stat"><strong>…</strong><span>Загрузка</span></div></div></div></section>
 <script>
-let tg = null;
-let telegramReady = false;
-let telegramInitData = '';
-
-function getTelegramWebApp() {
-    return window.Telegram?.WebApp || null;
-}
-
-function initTelegramBridge() {
-    tg = getTelegramWebApp();
-    if (tg) {
-        try { tg.ready(); } catch (_) {}
-        try { tg.expand(); } catch (_) {}
-        try { tg.enableClosingConfirmation(); } catch (_) {}
-        telegramInitData = String(tg.initData || '');
-    }
-    telegramReady = Boolean(tg);
-    return tg;
-}
+let tg = window.Telegram?.WebApp || null;
+if (tg) { try { tg.ready(); } catch (_) {} try { tg.expand(); } catch (_) {} try { tg.enableClosingConfirmation(); } catch (_) {} }
 const API_URL = "https://n8n.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad45f";
-let user = {};
+let telegramInitData = String(tg?.initData || '');
+let user = tg?.initDataUnsafe?.user || {};
 let accessToken = sessionStorage.getItem('eventhub_access_token') || '';
 
 let isAdmin = false;
@@ -613,6 +603,8 @@ let selectedDate = null;
 let selectedHour = null;
 let currentEventId = null;
 let guestCount = 0;
+let guestTotalBase = 0;
+let socialCurrentEvent = null;
 
 let calendarYear  = new Date().getFullYear();
 let calendarMonth = new Date().getMonth();
@@ -622,6 +614,18 @@ function localToUTC(dateStr, hour) {
     d.setHours(hour, 0, 0, 0);
     return d.toISOString().slice(0, 19);
 }
+
+function renderGuestCounters(){
+    const nextMyGuests = Math.max(0, Number(guestCount) || 0);
+    const myGuestsEl = document.getElementById('eventMyGuestCount');
+    const totalGuestsEl = document.getElementById('eventTotalGuests');
+    const myGuestsButton = document.getElementById('eventMyGuests');
+    if (myGuestsEl) myGuestsEl.textContent = nextMyGuests;
+    if (myGuestsButton) myGuestsButton.style.display = nextMyGuests > 0 ? 'inline-block' : 'none';
+    if (totalGuestsEl) totalGuestsEl.textContent = Math.max(0, Number(guestTotalBase || 0) - Number(initialGuestSlots || 0) + nextMyGuests);
+}
+window.increaseGuests = function(){ guestCount = (Number(guestCount) || 0) + 1; renderGuestCounters(); };
+window.decreaseGuests = function(){ guestCount = Math.max(0, (Number(guestCount) || 0) - 1); renderGuestCounters(); };
 
 function formatDateShort(dateStr) {
     const d = new Date(dateStr);
@@ -641,9 +645,7 @@ async function api(entity, action, data = {}) {
         const raw = await res.text();
         let parsed; try { parsed = raw ? JSON.parse(raw) : null; } catch (_) { parsed = raw; }
         if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
-        if (parsed === null || parsed === '') {
-            return { success: false, error: 'Сервер вернул пустой ответ', http_status: res.status, empty_response: true };
-        }
+        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true };
         return parsed;
     } catch (e) {
         console.error(e);
@@ -672,7 +674,7 @@ async function loadModerators() {
     } catch(e) {
         console.error('get_moderators:', e);
         select.innerHTML = '<option value="">Ошибка webhook: модераторы не загружены</option>';
-        notifyUser(e?.message || 'Ошибка обращения к webhook');
+        showToast(e?.message || 'Ошибка обращения к webhook', 'error');
     }
 }
 
@@ -841,65 +843,142 @@ async function saveNewEvent() {
     }
 }
 
+
+const SOCIAL_REFERRAL_KEY = 'eventhub_referral_token';
+const SOCIAL_EVENT_KEY = 'eventhub_referral_event';
+function getStartParam(){
+  const query = new URLSearchParams(window.location.search);
+  return tg?.initDataUnsafe?.start_param || query.get('tgWebAppStartParam') || query.get('startapp') || '';
+}
+function captureReferral(){
+  const raw = String(getStartParam() || '');
+  const match = raw.match(/^event[_-]([0-9a-f-]+?)(?:[_-]ref[_-]([0-9]+))?$/i);
+  if (!match) return;
+  const eventId = match[1];
+  const inviterId = match[2] || '';
+  localStorage.setItem(SOCIAL_EVENT_KEY, eventId);
+  localStorage.setItem(SOCIAL_REFERRAL_KEY, raw);
+  window.eventhubReferral = { event_id: eventId, inviter_id: inviterId, token: raw };
+}
+function getReferralToken(eventId){
+  const savedEvent = localStorage.getItem(SOCIAL_EVENT_KEY) || '';
+  return savedEvent === String(eventId) ? (localStorage.getItem(SOCIAL_REFERRAL_KEY) || '') : '';
+}
+function buildSocialUrl(eventId){
+  const botUrl = new URL('https://t.me/vkor2105_bot');
+  botUrl.searchParams.set('startapp', 'event_' + String(eventId) + '_ref_' + String(user?.id || 'share'));
+  return botUrl.toString();
+}
+function getEventShareText(ev){
+  const date = new Date(ev.event_date).toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+  const time = new Date(ev.event_date).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  return 'Пойдём вместе на «' + ev.title + '»? ' + date + ' в ' + time + '. Открой ссылку, чтобы присоединиться:';
+}
+async function trackSocial(action, data){
+  try {
+    const auth = accessToken ? { access_token: accessToken, user } : { tg_init_data: tg?.initData || '', user };
+    await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ...data, action, auth }) });
+  } catch (_) { /* analytics must not block UX */ }
+}
+async function loadSocialStats(eventId){
+  try { const response=await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stats',event_id:eventId,auth:{tg_init_data:tg?.initData||'',user}})}); const raw=await response.text(); const parsed=raw?JSON.parse(raw):null; return Array.isArray(parsed)?(parsed[0]||{}):(parsed?.result||parsed||{}); } catch(_){ return null; }
+}
+async function renderSocialStats(eventId){
+  if(!isAdmin)return; const detailInfo=document.getElementById('detailInfo'); if(!detailInfo)return; const stats=await loadSocialStats(eventId); if(!stats||stats.error)return;
+  const iconStat=(icon,value,label)=>'<div class="social-stat" title="'+label+'" aria-label="'+label+': '+Number(value||0)+'"><strong>'+Number(value||0)+'</strong><span aria-hidden="true">'+icon+'</span><span class="social-stat-label">'+label+'</span></div>';
+  detailInfo.insertAdjacentHTML('beforeend','<div class="social-stats" aria-label="Статистика распространения"><div class="social-stats-grid">'+iconStat('👁',stats.views,'Просмотров')+iconStat('↗',stats.shares,'Поделились')+iconStat('✓',stats.joins,'Регистраций')+iconStat('⌁',stats.referral_joins,'От приглашений')+iconStat('♟',stats.invited_users,'Новых участников')+iconStat('♧',stats.guest_slots,'Гостей')+'</div><button class="social-stats-refresh" type="button" title="Обновить статистику" aria-label="Обновить статистику" onclick="refreshSocialStats()">↻</button></div>');
+ }
+async function refreshSocialStats(){document.querySelector('.social-stats')?.remove();if(currentEventId)await renderSocialStats(currentEventId);}
+async function shareEvent(eventId){
+  const ev = events.find(item => String(item.id) === String(eventId));
+  if (!ev) return;
+  const url = buildSocialUrl(eventId);
+  const text = getEventShareText(ev);
+  await trackSocial('share', { event_id: eventId, referral_token: url.includes('startapp=') ? new URL(url).searchParams.get('startapp') : '' });
+  const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+  if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+  else if (navigator.share) navigator.share({title: ev.title, text, url}).catch(() => {});
+  else { await navigator.clipboard?.writeText(url); notifyUser('Ссылка на событие скопирована'); }
+}
+function renderSocialActions(ev, isJoined, placesFree){
+  const detailInfo = document.getElementById('detailInfo');
+  if (!detailInfo) return;
+  const count = Number(ev.participants_count || 0);
+  const friends = Array.isArray(ev.participants) ? ev.participants.length : 0;
+  const freeText = placesFree === null ? 'Места без лимита' : ('Свободно: ' + Math.max(0, placesFree));
+  const referral = getReferralToken(ev.id);
+  detailInfo.insertAdjacentHTML('beforeend', '<div class="social-signal"><span>👥 <strong>' + count + '</strong> участников</span><span>📍 ' + freeText + '</span>' + (friends > 1 ? '<span>✨ Уже идут вместе</span>' : '') + '</div>' + (referral ? '<div class="social-invite-note">Вы открыли событие по приглашению. Можно присоединиться вместе с другом.</div>' : ''));
+  const actions = document.querySelector('.event-detail-actions');
+  if (!actions || actions.querySelector('.social-actions')) return;
+  const socialActions = document.createElement('div');
+  socialActions.className = 'social-actions';
+  const inviteButton = document.createElement('button');
+  inviteButton.className = 'social-action primary';
+  inviteButton.type = 'button';
+  inviteButton.innerHTML = '↗<br><small>Позвать</small>'; inviteButton.title = 'Позвать друзей';
+  inviteButton.onclick = () => shareEvent(ev.id);
+  const togetherButton = document.createElement('button');
+  togetherButton.className = 'social-action';
+  togetherButton.type = 'button';
+  togetherButton.innerHTML = '♧<br><small>Вместе</small>'; togetherButton.title = 'Пойти вместе';
+  togetherButton.onclick = () => shareEvent(ev.id);
+  socialActions.append(inviteButton, togetherButton);
+  actions.prepend(socialActions);
+}
+
+
+function addEventToCalendar(ev){
+  const start=new Date(ev.event_date); const end=new Date(start.getTime()+2*60*60*1000);
+  const icsDate=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const esc=v=>String(v||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\r?\n/g,'\\n');
+  const body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//VKOR//EventHub//RU','BEGIN:VEVENT','UID:eventhub-'+esc(ev.id)+'@vkor2105_bot','DTSTAMP:'+icsDate(new Date()),'DTSTART:'+icsDate(start),'DTEND:'+icsDate(end),'SUMMARY:'+esc(ev.title||'Событие'),'DESCRIPTION:'+esc(ev.description||''),'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:Напоминание о событии '+esc(ev.title||''),'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const uri='data:text/calendar;charset=utf-8,'+encodeURIComponent(body); const a=document.createElement('a'); a.href=uri; a.download=esc(ev.title||'event')+'.ics'; a.click(); if(tg?.openLink) setTimeout(()=>tg.openLink(uri),50); showToast('Событие добавлено в календарь','success');
+}
+
+async function loadParticipantStats(userId){try{const r=await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'user_stats',user_id:userId,auth:{tg_init_data:tg?.initData||'',user}})});const raw=await r.text();const d=raw?JSON.parse(raw):{};return Array.isArray(d)?(d[0]||{}):(d.result||d||{});}catch(_){return {};}}
+async function openParticipantProfile(participant){const modal=document.getElementById('participantProfileModal');if(!modal)return;const name=[participant?.first_name,participant?.last_name].filter(Boolean).join(' ')||participant?.username||'Участник';document.getElementById('participantProfileName').textContent=name;document.getElementById('participantProfileSub').textContent=participant?.username?'@'+participant.username:'Участник события';const av=document.getElementById('participantProfileAvatar');av.innerHTML='';if(participant?.photo_url||participant?.userpic){const im=document.createElement('img');im.src=participant.photo_url||participant.userpic;im.onerror=()=>{av.textContent=(participant?.first_name?.[0]||'')+(participant?.last_name?.[0]||'')||'?';};av.appendChild(im);}else av.textContent=(participant?.first_name?.[0]||'')+(participant?.last_name?.[0]||'')||'?';const box=document.getElementById('participantProfileStats');box.innerHTML='<div class="participant-profile-stat"><strong>…</strong><span>Загрузка</span></div>';modal.classList.add('show');const s=await loadParticipantStats(participant?.id);const items=[['referrals','Рефералы бота','👤'],['invited_participants','Приглашены','🤝'],['together_visits','Ходил вместе','♧'],['event_joins','Участия','✓'],['shares','Поделился','↗'],['views','Просмотры','◉']];box.innerHTML=items.map(([k,l,i])=>'<div class="participant-profile-stat" title="'+l+'"><strong>'+i+' '+Number(s[k]||0)+'</strong><span>'+l+'</span></div>').join('');}
+function closeParticipantProfile(){document.getElementById('participantProfileModal')?.classList.remove('show');}
+
+
+function eventThemeKey(id){return 'eventhub_event_theme_'+String(id);}
+function applyEventTheme(ev){const panel=document.querySelector('.event-detail-panel');if(!panel)return;const theme=localStorage.getItem(eventThemeKey(ev.id))||ev.theme||'coral';panel.classList.remove('event-theme-night','event-theme-mint','event-theme-sun','event-theme-ocean');if(theme!=='coral')panel.classList.add('event-theme-'+theme);document.querySelectorAll('.event-theme-option').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));document.getElementById('eventThemeEditor')?.classList.remove('show');}
+function toggleEventThemeEditor(){if(!isAdmin)return;document.getElementById('eventThemeEditor')?.classList.toggle('show');document.getElementById('eventDetailMenu')?.classList.remove('show');}
+function setEventTheme(theme){if(!isAdmin||!currentEventId)return;localStorage.setItem(eventThemeKey(currentEventId),theme);const ev=events.find(x=>String(x.id)===String(currentEventId));if(ev)applyEventTheme(ev);showToast('Оформление события обновлено','success');}
+function toggleEventAdminMenu(){if(!isAdmin)return;const btn=document.getElementById('detailDeleteBtn');if(btn){btn.style.display=btn.style.display==='block'?'none':'block';btn.style.position='fixed';btn.style.right='18px';btn.style.bottom='86px';btn.style.zIndex='2400';btn.style.background='var(--card)';btn.style.padding='12px 16px';btn.style.borderRadius='14px';btn.style.boxShadow='0 10px 24px rgba(0,0,0,.16)';}toggleEventThemeEditor();}
+
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
 function showToast(message, tone = 'default') { const stack = document.getElementById('toastStack'); if (!stack || !message) return; const toast = document.createElement('div'); toast.className = 'toast'; if (tone === 'success') toast.style.background = 'rgba(20,142,103,.94)'; if (tone === 'error') toast.style.background = 'rgba(194,57,78,.94)'; toast.textContent = message; stack.appendChild(toast); setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => toast.remove(), 220); }, 2800); }
 function showSkeleton() { const list = document.getElementById('eventsList'); if (list) list.innerHTML = '<div class="skeleton-list"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>'; }
 function applyTheme(theme) { document.documentElement.classList.toggle('dark', theme === 'dark'); }
 
 function showAuthError(message) { const error = document.getElementById('authError'); if (error) error.textContent = message || ''; }
-function telegramDebugText() {
-    const app = tg || getTelegramWebApp();
-    return `Telegram: ${app ? 'да' : 'нет'}; platform: ${app?.platform || 'нет'}; version: ${app?.version || 'нет'}; initData: ${String(app?.initData || telegramInitData || '').length} символов; userId: ${app?.initDataUnsafe?.user?.id || 'нет'}`;
-}
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
 function authUserFromResponse(response) { if (Array.isArray(response)) return response.find((item) => item && typeof item === 'object' && (item.id || item.user_id || item.access_token)) || null; if (response?.user && typeof response.user === 'object') return response.user; if (response?.data && Array.isArray(response.data)) return authUserFromResponse(response.data); if (response && typeof response === 'object' && (response.id || response.user_id || response.access_token)) return response; return null; }
-function telegramUserFromBridge() {
-    const candidate = tg?.initDataUnsafe?.user || user || {};
-    if (!candidate?.id) return null;
-    return {
-        ...candidate,
-        id: candidate.id,
-        user_id: candidate.id,
-        username: candidate.username || '',
-        first_name: candidate.first_name || '',
-        last_name: candidate.last_name || '',
-        photo_url: candidate.photo_url || ''
-    };
-}
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
 async function init() {
+    captureReferral();
     showSkeleton();
-    initTelegramBridge();
-    user = tg?.initDataUnsafe?.user || user || {};
     let authRes = accessToken ? await api('auth', 'validate_session') : null;
     let authenticatedUser = authUserFromResponse(authRes);
     if (!authenticatedUser && (telegramInitData || user?.id)) { accessToken = ''; sessionStorage.removeItem('eventhub_access_token'); authRes = await api('auth', 'validate'); authenticatedUser = authUserFromResponse(authRes); }
-    // Текущая Telegram-ветка n8n может вернуть HTTP 200 с пустым телом после upsert_user.
-    // Используем локальный Telegram-контекст только после попытки получить профиль из backend.
-    if (!authenticatedUser && telegramInitData && user?.id) authenticatedUser = telegramUserFromBridge();
-    if (!authenticatedUser) {
-        setAuthVisible(true);
-        if (telegramReady && !telegramInitData && !user?.id) {
-            showAuthError('Telegram не передал данные Mini App. ' + telegramDebugText());
-        }
-        return;
-    }
+    if (!authenticatedUser && user?.id) authenticatedUser = { ...user, user_id: user.id };
+    if (!authenticatedUser) { setAuthVisible(true); return; }
     user = authenticatedUser; setAuthVisible(false);
     renderOwnerProfile();
-    isAdmin = authenticatedUser.is_admin || false;
+    isAdmin = Boolean(authenticatedUser.is_admin || authenticatedUser.role === 'admin' || authenticatedUser.role === 'administrator' || authenticatedUser.user_role === 'admin' || authenticatedUser.user_role === 'administrator');
     document.getElementById('adminBadge')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('fab').classList.toggle('hidden', !isAdmin);
+    document.getElementById('organizerDashboardButton')?.classList.toggle('hidden', !isAdmin);
+    document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);
 
     const eventsRes = await api("events", "list");
-    if (eventsRes?.success === false) {
-        events = [];
-        render();
-        notifyUser(`Ошибка webhook: ${eventsRes.error || 'не удалось получить события'}`);
-        return;
+    if (eventsRes?.success === false && !eventsRes.empty_response) {
+        showToast(`Ошибка webhook: ${eventsRes.error || 'не удалось загрузить события'}`, 'error');
     }
     events = Array.isArray(eventsRes) ? eventsRes : (eventsRes?.events || []);
     render();
+    // Always start on the main event list. Referral data is retained for a later join action.
 }
 
 function render() {
@@ -964,10 +1043,13 @@ function isWebhookSuccess(response, expectedKey) {
 }
 
 window.openEvent = async (id) => {
-    const ev = events.find(e => e.id === id);
+    document.querySelector(".social-actions")?.remove();
+    const ev = events.find(e => String(e.id) === String(id));
     if (!ev) return;
 
     currentEventId = id;
+    socialCurrentEvent = ev;
+    trackSocial("view", { event_id: id, referral_token: getReferralToken(id) });
 
     const d = new Date(ev.event_date);
     const fullDate = d.toLocaleDateString('ru-RU', {
@@ -975,18 +1057,21 @@ window.openEvent = async (id) => {
     }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const participants = Array.isArray(ev.participants) ? ev.participants : [];
-    const currentUserParticipant = participants.find(p => p?.id === user.id);
+    const currentUserParticipant = participants.find(p => String(p?.id) === String(user?.id));
     const isJoined = !!currentUserParticipant;
 
     const initialGuestSlots = currentUserParticipant ? Number(currentUserParticipant.guest_slots || 0) : 0;
+    guestTotalBase = participants.reduce((sum, participant) => sum + Number(participant?.guest_slots || 0), 0);
     guestCount = initialGuestSlots;
 
     document.getElementById('detailTitle').textContent = ev.title;
+    document.getElementById('detailKicker').textContent = (ev.category || 'Событие') + ' · VKOR';
+    applyEventTheme(ev);
     document.getElementById('detailDate').textContent = fullDate;
     document.getElementById('detailInfo').innerHTML = `
-        ${ev.description ? `<div style="margin-bottom:16px;opacity:0.9;line-height:1.6;">${ev.description.replace(/\n/g,'<br>')}</div>` : ''}
-        <div><strong>Занято / лимит:</strong> ${ev.participants_count || 0}${ev.max_participants ? ` / ${ev.max_participants}` : ''}</div>
-        <div><strong>Стоимость:</strong> ${ev.price_rub > 0 ? ev.price_rub + ' ₽' : 'бесплатно'}</div>
+        <div class="event-date-card"><div class="event-date-day">${d.toLocaleDateString('ru-RU',{day:'2-digit'})}<small>${d.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</small></div><div class="event-date-copy">${d.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'})}<span>⏰ ${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
+        ${ev.description ? `<div class="event-description-block"><div class="event-section-label">О событии</div><div class="event-description-text">${ev.description.replace(/\n/g,'<br>')}</div></div>` : ''}
+        <div class="event-fact-grid"><div class="event-fact"><strong>👥 ${ev.participants_count || 0}${ev.max_participants ? ' / '+ev.max_participants : ''}</strong><span>Участники</span></div><div class="event-fact"><strong>${ev.price_rub > 0 ? ev.price_rub + ' ₽' : 'Бесплатно'}</strong><span>Стоимость</span></div></div>
     `;
 
     const avatarsContainer = document.getElementById('detailAvatars');
@@ -1007,7 +1092,7 @@ window.openEvent = async (id) => {
             wrapper.style.position = 'relative';
             wrapper.style.width = '72px';
             wrapper.style.height = '96px';
-            wrapper.style.textAlign = 'center';
+            wrapper.style.textAlign = 'center'; wrapper.style.cursor = 'pointer'; wrapper.title = 'Открыть профиль участника'; wrapper.onclick = () => openParticipantProfile(p);
 
             const avatarDiv = document.createElement('div');
             avatarDiv.style.cssText = 'width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f0f0f0;box-shadow:0 4px 12px rgba(0,0,0,0.1);';
@@ -1057,16 +1142,23 @@ window.openEvent = async (id) => {
         });
     }
 
-    document.getElementById('guestBlock').style.display = 'block';
-    document.getElementById('guestCount').textContent = guestCount;
-    document.getElementById('guestHint').textContent = isJoined 
-        ? 'Изменить количество ваших гостей' 
-        : 'Сколько гостей хотите пригласить?';
+    guestTotalBase = participants.reduce((sum, participant) => sum + Number(participant?.guest_slots || 0), 0);
+    const totalGuestsEl = document.getElementById('eventTotalGuests');
+    const myGuestsEl = document.getElementById('eventMyGuestCount');
+    const myGuestsButton = document.getElementById('eventMyGuests');
+    if (totalGuestsEl) totalGuestsEl.textContent = guestTotalBase;
+    if (myGuestsEl) myGuestsEl.textContent = guestCount;
+    if (myGuestsButton) myGuestsButton.style.display = guestCount > 0 ? 'inline-block' : 'none';
+
+    document.querySelector('.social-actions')?.remove();
+    document.querySelectorAll('.social-signal,.social-invite-note').forEach(node => node.remove());
 
     const actionBtn = document.getElementById('detailActionBtn');
     const maxParticipants = Number(ev.max_participants);
     const isUnlimited = Number.isFinite(maxParticipants) && maxParticipants === 0;
     const placesFree = isUnlimited ? null : (ev.available_places ?? ev.free_places ?? (ev.max_participants != null && maxParticipants > 0 ? Math.max(0, maxParticipants - Number(ev.participants_count || 0)) : null));
+    renderSocialActions(ev, isJoined, placesFree);
+    renderSocialStats(id);
 
     let buttonText = 'Присоединиться';
     let actionType = 'join';
@@ -1100,9 +1192,10 @@ window.openEvent = async (id) => {
                 console.log("leave ответ:", res);
             }
         } else {
-            const payload = { event_id: id, user_id: user?.id, guests: guestCount };
+            const payload = { event_id: id, user_id: user?.id, guests: guestCount, referral_token: getReferralToken(id) };
             res = await api("events", "join", payload);
             if (isWebhookSuccess(res, "join_event")) {
+                trackSocial("join", { event_id: id, event_date: ev.event_date, referral_token: getReferralToken(id), guests: guestCount });
                 if (isJoined) {
                     tg.showAlert("Количество гостей обновлено");
                 } else {
@@ -1142,18 +1235,6 @@ window.selectDate = function(dateStr) {
     checkReady();
 };
 
-window.decreaseGuests = function() {
-    if (guestCount > 0) {
-        guestCount--;
-        document.getElementById('guestCount').textContent = guestCount;
-    }
-};
-
-window.increaseGuests = function() {
-    guestCount++;
-    document.getElementById('guestCount').textContent = guestCount;
-};
-
 
 let profileSettings = {};
 function profileStorageKey(){ return 'eventhub_profile_' + String(user?.id || user?.login || 'guest'); }
@@ -1176,39 +1257,13 @@ function saveProfileSettings(){ profileSettings={display_name:document.getElemen
 
 document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
 document.getElementById('authForm').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('authSubmit'); button.disabled = true; try { if (await authRequest(window.authMode || 'login')) await init(); } finally { button.disabled = false; } });
-document.getElementById('telegramLogin').addEventListener('click', async () => {
-    showAuthError('Ожидание данных Telegram…');
-    const button = document.getElementById('telegramLogin');
-    button.disabled = true;
-    try {
-    initTelegramBridge();
-    telegramInitData = String(tg?.initData || telegramInitData || '');
-    user = tg?.initDataUnsafe?.user || user || {};
-    if (!telegramInitData && !user?.id) {
-        showAuthError('Telegram не передал данные Mini App. ' + telegramDebugText());
-        return;
-    }
-    accessToken = '';
-    sessionStorage.removeItem('eventhub_access_token');
-    showAuthError('');
-    await init();
-    } catch (error) {
-        console.error(error);
-        showAuthError('Ошибка авторизации через Telegram: ' + (error?.message || 'неизвестная ошибка'));
-    } finally {
-        button.disabled = false;
-    }
-});
+document.getElementById('telegramLogin').addEventListener('click', async () => { tg = window.Telegram?.WebApp || tg; telegramInitData = String(tg?.initData || telegramInitData || ''); user = tg?.initDataUnsafe?.user || user || {}; if (!telegramInitData && !user?.id) { showAuthError('Telegram не передал данные Mini App.'); return; } accessToken = ''; sessionStorage.removeItem('eventhub_access_token'); showAuthError(''); await init(); });
 document.getElementById('authLogout').addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; sessionStorage.removeItem('eventhub_access_token'); setAuthMode('login'); setAuthVisible(true); });
 setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
 updateProfileThemeButtons();
-// Запускаем API-инициализацию сразу, без ожидания Telegram bridge.
-init().catch((error) => {
-    console.error(error);
-    showAuthError('Не удалось запустить авторизацию: ' + (error?.message || 'ошибка приложения'));
-});
+init().catch((error) => { console.error(error); showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка')); });
 </script>
 <script>
 (() => {
@@ -1216,7 +1271,7 @@ init().catch((error) => {
   if (!list) return;
   const hero = document.querySelector('.header');
   if (hero && !document.querySelector('.pulse-hero')) hero.insertAdjacentHTML('afterend', "\n<section class=\"pulse-hero\" aria-label=\"Обзор событий\"><div class=\"pulse-hero-kicker\">Event Pulse · сегодня</div><h2>Люди, идеи и поводы встретиться</h2><p>Выберите настроение, найдите событие и присоединяйтесь одним касанием.</p></section>\n<input id=\"pulseSearch\" class=\"pulse-search\" type=\"search\" placeholder=\"Поиск по событиям…\" aria-label=\"Поиск по событиям\">\n<div class=\"pulse-tools\" role=\"tablist\" aria-label=\"Фильтр событий\"><button class=\"pulse-chip active\" data-pulse-filter=\"all\">Все</button><button class=\"pulse-chip\" data-pulse-filter=\"soon\">Скоро</button><button class=\"pulse-chip\" data-pulse-filter=\"free\">Бесплатно</button><button class=\"pulse-chip\" data-pulse-filter=\"joined\">Я участвую</button></div>\n");
-  document.body.insertAdjacentHTML('beforeend','<nav class="pulse-bottom-nav" aria-label="Основная навигация"><button class="active" data-pulse-nav="events"><span class="pulse-nav-icon">✦</span>События</button><button data-pulse-nav="saved"><span class="pulse-nav-icon">♡</span>Избранное</button><button data-pulse-nav="profile" onclick="openSettings()"><span class="pulse-nav-icon">◉</span>Профиль</button></nav><div id="pulseToast" class="pulse-toast" role="status"></div>');
+  document.body.insertAdjacentHTML('beforeend','<nav class="pulse-bottom-nav" aria-label="Основная навигация"><button class="active" data-pulse-nav="events"><span class="pulse-nav-icon">✦</span>События</button><button data-pulse-nav="saved"><span class="pulse-nav-icon">♡</span>Избранное</button><button class="organizer-dashboard-nav hidden" data-pulse-nav="organizer" onclick="openOrganizerDashboard()"><span class="pulse-nav-icon">▥</span>Аналитика</button><button data-pulse-nav="profile" onclick="openSettings()"><span class="pulse-nav-icon">◉</span>Профиль</button></nav><div id="pulseToast" class="pulse-toast" role="status"></div>');
   let filter = 'all', query = '';
   const favorites = new Set(JSON.parse(localStorage.getItem('eventhub_favorites') || '[]'));
   const liked = new Set(JSON.parse(localStorage.getItem('eventhub_likes') || '[]'));
@@ -1230,8 +1285,8 @@ init().catch((error) => {
       if (card.dataset.pulseReady) return;
       card.dataset.pulseReady='1'; const title=card.querySelector('.event-title')?.textContent||''; const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1] || title;
       const media=document.createElement('div'); media.className='pulse-media'; media.innerHTML='<span>✦ подборка события</span>'; const copy=card.querySelector('.event-copy'); if(copy) copy.prepend(media);
-      const tools=document.createElement('div'); tools.className='pulse-card-tools'; tools.innerHTML='<button class="pulse-card-tool" data-pulse-action="like">♡ Нравится</button><button class="pulse-card-tool" data-pulse-action="save">☆ Сохранить</button><button class="pulse-card-tool" data-pulse-action="share">↗ Поделиться</button>'; copy?.appendChild(tools);
-      tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='share'){const text=title; if(navigator.share) navigator.share({title:text,text}).catch(()=>{}); else {navigator.clipboard?.writeText(text);toast('Название события скопировано');}} sync(); });
+      const tools=document.createElement('div'); tools.className='pulse-card-tools'; tools.innerHTML='<button class="pulse-card-tool" data-pulse-action="like">♡ Нравится</button><button class="pulse-card-tool" data-pulse-action="save">☆ Сохранить</button><button class="pulse-card-tool" data-pulse-action="calendar">🗓 В календарь</button>'; copy?.appendChild(tools);
+      tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='calendar'){const ev=events.find(item=>String(item.id)===String(id)); if(ev) addEventToCalendar(ev);} sync(); });
       if(liked.has(id)){tools.children[0].classList.add('is-liked');tools.children[0].textContent='♥ Лайк';} if(favorites.has(id)){tools.children[1].classList.add('is-liked');tools.children[1].textContent='★ Сохранено';}
     });
     list.querySelectorAll('.event-card').forEach(card=>{const title=(card.querySelector('.event-title')?.textContent||'').toLowerCase();const joined=card.textContent.includes('Вы записаны');const free=card.textContent.toLowerCase().includes('бесплатно');const visible=(!query||title.includes(query))&&(filter==='all'||(filter==='joined'&&joined)||(filter==='free'&&free)||(filter==='soon'&&card.querySelector('.event-date-block')));card.style.display=visible?'':'none';});
@@ -1240,6 +1295,45 @@ init().catch((error) => {
   document.addEventListener('input',e=>{if(e.target.id==='pulseSearch'){query=e.target.value.trim().toLowerCase();decorate();}});
   document.addEventListener('click',e=>{const chip=e.target.closest('[data-pulse-filter]');if(chip){filter=chip.dataset.pulseFilter;document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.toggle('active',x===chip));decorate();}const nav=e.target.closest('[data-pulse-nav]');if(nav&&nav.dataset.pulseNav==='saved'){filter='saved';document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.remove('active'));list.querySelectorAll('.event-card').forEach(card=>{const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1]||'';card.style.display=favorites.has(id)?'':'none';});toast('Показаны сохранённые события');}});
   setTimeout(decorate, 250);
+})();
+</script><script>
+(function(){
+  const SOCIAL_API='https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f';
+  function dashboardStats(eventId){
+    return fetch(SOCIAL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stats',event_id:eventId,auth:{tg_init_data:tg?.initData||'',user}})})
+      .then(r=>r.text()).then(raw=>{const data=raw?JSON.parse(raw):{};return Array.isArray(data)?(data[0]||{}):(data.result||data||{});}).catch(()=>({}));
+  }
+  function metric(value,label){const el=document.createElement('span');el.className='organizer-event-metric';el.textContent=label+': '+Number(value||0);return el;}
+  async function loadOrganizerDashboard(){
+    const root=document.getElementById('organizerDashboard'); if(!root)return;
+    const list=root.querySelector('.organizer-dashboard-list'); const summary=root.querySelector('.organizer-dashboard-summary');
+    list.innerHTML='<div class="organizer-dashboard-loading">Загружаем статистику…</div>'; summary.innerHTML='';
+    const ownEvents=Array.isArray(events)?events.filter(ev=>ev && ev.id):[];
+    const rows=await Promise.all(ownEvents.map(async ev=>({ev,stats:await dashboardStats(ev.id)})));
+    const total=rows.reduce((acc,row)=>{for(const key of ['views','shares','joins','referral_joins'])acc[key]+=Number(row.stats?.[key]||0);return acc},{views:0,shares:0,joins:0,referral_joins:0});
+    [['views','Просмотры'],['shares','Поделились'],['joins','Регистрации'],['referral_joins','По приглашению']].forEach(([key,label])=>{const el=document.createElement('div');el.className='organizer-dashboard-total';el.innerHTML='<strong>'+total[key]+'</strong><span>'+label+'</span>';summary.appendChild(el);});
+    list.innerHTML='';
+    if(!rows.length){list.innerHTML='<div class="organizer-dashboard-empty">Пока нет событий для аналитики</div>';return;}
+    rows.sort((a,b)=>Number(b.stats?.referral_joins||0)-Number(a.stats?.referral_joins||0));
+    rows.forEach(({ev,stats})=>{const row=document.createElement('div');row.className='organizer-event-row';const info=document.createElement('div');const name=document.createElement('div');name.className='organizer-event-name';name.textContent=ev.title||'Без названия';const date=document.createElement('div');date.className='organizer-event-date';date.textContent=ev.event_date?new Date(ev.event_date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';const open=document.createElement('button');open.className='organizer-event-open';open.type='button';open.textContent='Открыть событие';open.onclick=()=>{window.closeOrganizerDashboard?.();window.openEvent(ev.id);};info.append(name,date,open);const metrics=document.createElement('div');metrics.className='organizer-event-metrics';metrics.append(metric(stats.views,'Просм.'),metric(stats.shares,'Шары'),metric(stats.joins,'Записи'),metric(stats.referral_joins,'Реф.'));row.append(info,metrics);list.appendChild(row);});
+  }
+  window.openOrganizerDashboard=function(){if(!isAdmin)return;const root=document.getElementById('organizerDashboard');if(!root)return;root.classList.add('show');document.body.classList.add('pulse-modal-open');loadOrganizerDashboard();};
+  window.closeOrganizerDashboard=function(){document.getElementById('organizerDashboard')?.classList.remove('show');document.body.classList.remove('pulse-modal-open');document.querySelectorAll('[data-pulse-nav]').forEach(x=>x.classList.toggle('active',x.dataset.pulseNav==='events'));};
+  const syncOrganizerNav=()=>{document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);};
+  const mountDashboard=()=>{
+    if(document.getElementById('organizerDashboard'))return true;
+    const hero=document.querySelector('.pulse-hero')||document.querySelector('.header');
+    if(!hero)return false;
+    hero.insertAdjacentHTML('afterend','<button id="organizerDashboardButton" class="organizer-dashboard-button" type="button" onclick="openOrganizerDashboard()">Панель организатора · аналитика</button><section id="organizerDashboard" class="organizer-dashboard"><div class="organizer-dashboard-head"><div class="organizer-dashboard-title">Мои события</div><button class="organizer-dashboard-close" type="button" onclick="closeOrganizerDashboard()">Закрыть</button></div><div class="organizer-dashboard-summary"></div><div class="organizer-dashboard-list"></div></section>');
+    return true;
+  };
+  const syncVisibility=()=>{const button=document.getElementById('organizerDashboardButton');if(button)button.style.display=isAdmin?'block':'none';};
+  const tryMount=()=>{if(mountDashboard())syncVisibility();};
+  tryMount();
+  syncOrganizerNav();
+  document.addEventListener('DOMContentLoaded',tryMount,{once:false});
+  const mountObserver=new MutationObserver(tryMount); mountObserver.observe(document.body,{childList:true,subtree:true});
+  const visibilityTimer=setInterval(()=>{tryMount();syncVisibility();syncOrganizerNav();if(isAdmin&&document.getElementById('organizerDashboard'))clearInterval(visibilityTimer);},250);
 })();
 </script></body>
 </html>
