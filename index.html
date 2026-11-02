@@ -592,26 +592,12 @@ function getTelegramWebApp() {
     return window.Telegram?.WebApp || null;
 }
 
-async function initTelegramBridge(timeoutMs = 2500) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-        tg = getTelegramWebApp();
-        if (tg) {
-            try { tg.ready(); } catch (_) {}
-            try { tg.expand(); } catch (_) {}
-            try { tg.enableClosingConfirmation(); } catch (_) {}
-            telegramInitData = String(tg.initData || '');
-            if (telegramInitData || tg.initDataUnsafe?.user?.id) {
-                telegramReady = true;
-                return tg;
-            }
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
+function initTelegramBridge() {
     tg = getTelegramWebApp();
     if (tg) {
         try { tg.ready(); } catch (_) {}
         try { tg.expand(); } catch (_) {}
+        try { tg.enableClosingConfirmation(); } catch (_) {}
         telegramInitData = String(tg.initData || '');
     }
     telegramReady = Boolean(tg);
@@ -884,7 +870,7 @@ function telegramUserFromBridge() {
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
 async function init() {
     showSkeleton();
-    await initTelegramBridge();
+    initTelegramBridge();
     user = tg?.initDataUnsafe?.user || user || {};
     let authRes = accessToken ? await api('auth', 'validate_session') : null;
     let authenticatedUser = authUserFromResponse(authRes);
@@ -1195,7 +1181,7 @@ document.getElementById('telegramLogin').addEventListener('click', async () => {
     const button = document.getElementById('telegramLogin');
     button.disabled = true;
     try {
-    await initTelegramBridge(10000);
+    initTelegramBridge();
     telegramInitData = String(tg?.initData || telegramInitData || '');
     user = tg?.initDataUnsafe?.user || user || {};
     if (!telegramInitData && !user?.id) {
@@ -1218,7 +1204,7 @@ setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
 updateProfileThemeButtons();
-// Запускаем инициализацию после регистрации обработчиков, чтобы кнопка была доступна даже при задержке Telegram bridge.
+// Запускаем API-инициализацию сразу, без ожидания Telegram bridge.
 init().catch((error) => {
     console.error(error);
     showAuthError('Не удалось запустить авторизацию: ' + (error?.message || 'ошибка приложения'));
