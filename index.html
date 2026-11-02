@@ -592,7 +592,7 @@ function getTelegramWebApp() {
     return window.Telegram?.WebApp || null;
 }
 
-async function initTelegramBridge(timeoutMs = 3000) {
+async function initTelegramBridge(timeoutMs = 10000) {
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
         tg = getTelegramWebApp();
@@ -854,6 +854,10 @@ function showSkeleton() { const list = document.getElementById('eventsList'); if
 function applyTheme(theme) { document.documentElement.classList.toggle('dark', theme === 'dark'); }
 
 function showAuthError(message) { const error = document.getElementById('authError'); if (error) error.textContent = message || ''; }
+function telegramDebugText() {
+    const app = tg || getTelegramWebApp();
+    return `Telegram: ${app ? 'да' : 'нет'}; platform: ${app?.platform || 'нет'}; version: ${app?.version || 'нет'}; initData: ${String(app?.initData || telegramInitData || '').length} символов; userId: ${app?.initDataUnsafe?.user?.id || 'нет'}`;
+}
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
 function authUserFromResponse(response) { if (Array.isArray(response)) return response.find((item) => item && typeof item === 'object' && (item.id || item.user_id || item.access_token)) || null; if (response?.user && typeof response.user === 'object') return response.user; if (response?.data && Array.isArray(response.data)) return authUserFromResponse(response.data); if (response && typeof response === 'object' && (response.id || response.user_id || response.access_token)) return response; return null; }
@@ -868,7 +872,7 @@ async function init() {
     if (!authenticatedUser) {
         setAuthVisible(true);
         if (telegramReady && !telegramInitData && !user?.id) {
-            showAuthError('Telegram не передал данные Mini App. Откройте приложение через кнопку web_app в чате с ботом и обновите Telegram.');
+            showAuthError('Telegram не передал данные Mini App. ' + telegramDebugText());
         }
         return;
     }
@@ -1160,7 +1164,20 @@ init();
 
 document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
 document.getElementById('authForm').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('authSubmit'); button.disabled = true; try { if (await authRequest(window.authMode || 'login')) await init(); } finally { button.disabled = false; } });
-document.getElementById('telegramLogin').addEventListener('click', async () => { if (!tg?.initData) { showAuthError('Откройте приложение через Telegram или используйте логин и пароль.'); return; } accessToken = ''; user = tg.initDataUnsafe?.user || {}; sessionStorage.removeItem('eventhub_access_token'); showAuthError(''); await init(); });
+document.getElementById('telegramLogin').addEventListener('click', async () => {
+    showAuthError('Ожидание данных Telegram…');
+    await initTelegramBridge(10000);
+    telegramInitData = String(tg?.initData || telegramInitData || '');
+    user = tg?.initDataUnsafe?.user || user || {};
+    if (!telegramInitData && !user?.id) {
+        showAuthError('Telegram не передал данные Mini App. ' + telegramDebugText());
+        return;
+    }
+    accessToken = '';
+    sessionStorage.removeItem('eventhub_access_token');
+    showAuthError('');
+    await init();
+});
 document.getElementById('authLogout').addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; sessionStorage.removeItem('eventhub_access_token'); setAuthMode('login'); setAuthVisible(true); });
 setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
