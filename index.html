@@ -995,18 +995,6 @@ function authUserFromResponse(response) {
   if (typeof response === 'string') {
     try { return authUserFromResponse(JSON.parse(response)); } catch (_) { return null; }
   }
-  if (response && typeof response === 'object' && !Array.isArray(response)) {
-    const authFields = {};
-    for (const key of ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'role', 'user_role']) {
-      if (response[key] !== undefined) authFields[key] = response[key];
-    }
-    for (const key of ['body', 'response', 'json', 'account', 'auth_user', 'telegram_user', 'profile']) {
-      if (response[key] && typeof response[key] === 'object') {
-        const nested = authUserFromResponse(response[key]);
-        if (nested) return { ...nested, ...authFields };
-      }
-    }
-  }
   if (Array.isArray(response)) {
     for (const item of response) {
       const user = authUserFromResponse(item);
@@ -1015,10 +1003,18 @@ function authUserFromResponse(response) {
     return null;
   }
   if (!response || typeof response !== 'object') return null;
-  if (response.result && typeof response.result === 'object') return { ...authUserFromResponse(response.result), ...response };
-  if (response.user && typeof response.user === 'object') return { ...authUserFromResponse(response.user), ...response };
-  if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) return { ...authUserFromResponse(response.data), ...response };
-  if (response.id || response.user_id || response.telegram_id || response.access_token || response.is_admin !== undefined || response.isAdmin !== undefined || response.role || response.user_role) return response;
+  const accountKeys = ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'role', 'user_role', 'userRole'];
+  const account = {};
+  for (const key of accountKeys) {
+    if (response[key] !== undefined) account[key] = response[key];
+  }
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'auth_user', 'telegram_user', 'profile', 'permissions', 'rows', 'items']) {
+    if (response[key] !== undefined) {
+      const nested = authUserFromResponse(response[key]);
+      if (nested) return { ...account, ...nested };
+    }
+  }
+  if (Object.keys(account).length) return account;
   return null;
 }
 function webhookValue(response, keys = []) {
@@ -1063,7 +1059,7 @@ function userIsAdmin(account) {
   if (!account || typeof account !== 'object') return false;
   return truthyFlag(account.is_admin) || truthyFlag(account.isAdmin) ||
     ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role ?? '').trim().toLowerCase()) ||
-    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? '').trim().toLowerCase());
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? account.userRole ?? '').trim().toLowerCase());
 }
 function syncAdminVisibility() {
   const visible = Boolean(isAdmin);
