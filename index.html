@@ -1026,7 +1026,9 @@ function webhookCollection(response, keys = []) {
       if (items.length) return items;
     }
   }
-  return [];
+  // n8n `allIncomingItems` normally returns a plain array of row objects.
+  // Keep a row instead of dropping it when there is no envelope key.
+  return [response];
 }
 function truthyFlag(value) {
   return value === true || value === 1 || ['true', '1', 'yes', 'admin', 'administrator'].includes(String(value ?? '').trim().toLowerCase());
