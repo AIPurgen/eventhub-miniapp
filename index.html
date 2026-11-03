@@ -677,7 +677,7 @@ async function loadModerators() {
     try {
         const res = await api("users", "get_moderators");
         if (res?.success === false) throw new Error(res.error || res.message || 'Ошибка webhook');
-        const mods = webhookValue(res, ['moderators']) || [];
+        const mods = webhookCollection(res, ['moderators']);
         if (!Array.isArray(mods)) throw new Error('Webhook вернул неверный формат списка модераторов');
         select.innerHTML = '<option value="">Не выбран (я модератор)</option>';
         mods.forEach(m => {
@@ -1016,6 +1016,18 @@ function webhookValue(response, keys = []) {
   }
   return response;
 }
+function webhookCollection(response, keys = []) {
+  if (Array.isArray(response)) return response.reduce((all, item) => all.concat(webhookCollection(item, keys)), []);
+  if (!response || typeof response !== 'object') return [];
+  for (const key of keys) if (response[key] !== undefined) return webhookCollection(response[key], []);
+  for (const key of ['body', 'response', 'json', 'result', 'data']) {
+    if (response[key] !== undefined) {
+      const items = webhookCollection(response[key], keys);
+      if (items.length) return items;
+    }
+  }
+  return [];
+}
 function truthyFlag(value) {
   return value === true || value === 1 || ['true', '1', 'yes', 'admin', 'administrator'].includes(String(value ?? '').trim().toLowerCase());
 }
@@ -1065,8 +1077,7 @@ async function init() {
       if (eventsRes?.success === false && !eventsRes.empty_response) {
         showToast(`Ошибка webhook: ${eventsRes.error || 'не удалось загрузить события'}`, 'error');
     }
-      events = webhookValue(eventsRes, ['events']) || [];
-      if (!Array.isArray(events)) events = [];
+      events = webhookCollection(eventsRes, ['events']);
       render();
     // Always start on the main event list. Referral data is retained for a later join action.
     })().finally(() => { appInitInFlight = null; });
