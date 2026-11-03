@@ -444,6 +444,7 @@
 .social-invite-note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(48,184,0,.12);color:var(--text);font-size:13px;line-height:1.4}
 .social-stats{margin-top:14px;padding:14px;border-radius:16px;background:var(--lightgray);border:1px solid rgba(128,128,128,.12)}.social-stats-title{font-weight:700;margin-bottom:10px}.social-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.social-stat{padding:9px 6px;border-radius:12px;background:var(--card);text-align:center}.social-stat strong{display:block;font-size:20px}.social-stat span{font-size:11px;color:var(--secondary)}.social-stats-refresh{margin-top:10px;border:0;background:transparent;color:var(--accent);font:600 12px inherit;cursor:pointer;padding:0}</style>
 <style>
+.hidden{display:none!important}
 .organizer-dashboard{display:none;margin:0 0 24px;padding:20px;border-radius:26px;background:var(--card);box-shadow:0 8px 30px rgba(0,0,0,.08)}
 .organizer-dashboard.show{display:block}.organizer-dashboard-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.organizer-dashboard-title{font-size:24px;font-weight:800;letter-spacing:-.04em}.organizer-dashboard-close{border:0;background:var(--lightgray);color:var(--text);border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer}.organizer-dashboard-loading{color:var(--secondary);padding:22px 0;text-align:center}.organizer-dashboard-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}.organizer-dashboard-total{padding:12px 7px;border-radius:15px;background:var(--lightgray);text-align:center}.organizer-dashboard-total strong{display:block;font-size:22px}.organizer-dashboard-total span{font-size:11px;color:var(--secondary)}.organizer-dashboard-list{display:grid;gap:10px}.organizer-event-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px;border:1px solid rgba(128,128,128,.16);border-radius:16px}.organizer-event-name{font-weight:700;line-height:1.2}.organizer-event-date{font-size:12px;color:var(--secondary);margin-top:4px}.organizer-event-metrics{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}.organizer-event-metric{padding:6px 8px;border-radius:999px;background:var(--lightgray);font-size:11px;color:var(--secondary)}.organizer-event-open{margin-top:8px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:0}.organizer-dashboard-button{margin:0 0 18px;width:100%;border:0;border-radius:16px;padding:13px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer}.dark .organizer-dashboard-button{background:#fff;color:#111}.organizer-dashboard-empty{padding:16px 0;color:var(--secondary);text-align:center}@media(max-width:560px){.organizer-dashboard-summary{grid-template-columns:repeat(2,1fr)}.organizer-event-row{grid-template-columns:1fr}.organizer-event-metrics{justify-content:flex-start}}
 </style><style>.organizer-dashboard-button{position:fixed;right:20px;bottom:108px;z-index:101;border:0;border-radius:18px;padding:12px 16px;background:var(--text);color:var(--bg);font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.2);cursor:pointer}.organizer-dashboard-button.hidden{display:none!important}.dark .organizer-dashboard-button{background:#fff;color:#111}</style><style>
@@ -974,8 +975,14 @@ function setAuthVisible(visible) { document.getElementById('authShell').classLis
 function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
 function authUserFromResponse(response) {
+  // n8n's `allIncomingItems` response is sometimes a JSON string (and can
+  // contain the account under one of several envelope names).  Normalize it
+  // before looking at the account so role/is_admin are not lost.
+  if (typeof response === 'string') {
+    try { return authUserFromResponse(JSON.parse(response)); } catch (_) { return null; }
+  }
   if (response && typeof response === 'object' && !Array.isArray(response)) {
-    for (const key of ['body', 'response', 'json']) {
+    for (const key of ['body', 'response', 'json', 'account', 'auth_user', 'telegram_user', 'profile']) {
       if (response[key] && typeof response[key] === 'object') {
         const nested = authUserFromResponse(response[key]);
         if (nested) return nested;
@@ -993,7 +1000,7 @@ function authUserFromResponse(response) {
   if (response.result && typeof response.result === 'object') return authUserFromResponse(response.result);
   if (response.user && typeof response.user === 'object') return authUserFromResponse(response.user);
   if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) return authUserFromResponse(response.data);
-  if (response.id || response.user_id || response.access_token || response.is_admin !== undefined || response.role || response.user_role) return response;
+  if (response.id || response.user_id || response.telegram_id || response.access_token || response.is_admin !== undefined || response.isAdmin !== undefined || response.role || response.user_role) return response;
   return null;
 }
 function webhookValue(response, keys = []) {
@@ -1017,6 +1024,7 @@ function webhookValue(response, keys = []) {
   return response;
 }
 function webhookCollection(response, keys = []) {
+  if (typeof response === 'string') { try { return webhookCollection(JSON.parse(response), keys); } catch (_) { return []; } }
   if (Array.isArray(response)) return response.reduce((all, item) => all.concat(webhookCollection(item, keys)), []);
   if (!response || typeof response !== 'object') return [];
   for (const key of keys) if (response[key] !== undefined) return webhookCollection(response[key], []);
@@ -1036,8 +1044,13 @@ function truthyFlag(value) {
 function userIsAdmin(account) {
   if (!account || typeof account !== 'object') return false;
   return truthyFlag(account.is_admin) || truthyFlag(account.isAdmin) ||
-    ['admin', 'administrator'].includes(String(account.role ?? '').trim().toLowerCase()) ||
-    ['admin', 'administrator'].includes(String(account.user_role ?? '').trim().toLowerCase());
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role ?? '').trim().toLowerCase()) ||
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? '').trim().toLowerCase());
+}
+function syncAdminVisibility() {
+  const visible = Boolean(isAdmin);
+  ['fab', 'adminBadge', 'organizerDashboardButton'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !visible));
+  document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !visible);
 }
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
 async function init() {
@@ -1067,13 +1080,13 @@ async function init() {
         else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
         return false;
       }
-      user = { ...user, ...authenticatedUser }; setAuthVisible(false);
+      // Keep Telegram identity, but let the server's validated account win for
+      // id/role/flags.  The webhook may return user_id instead of id.
+      user = { ...user, ...authenticatedUser, id: authenticatedUser.id ?? authenticatedUser.user_id ?? user.id };
+      setAuthVisible(false);
       renderOwnerProfile();
       isAdmin = userIsAdmin(authenticatedUser);
-    document.getElementById('adminBadge')?.classList.toggle('hidden', !isAdmin);
-    document.getElementById('fab').classList.toggle('hidden', !isAdmin);
-    document.getElementById('organizerDashboardButton')?.classList.toggle('hidden', !isAdmin);
-    document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);
+      syncAdminVisibility();
       if (isAdmin) await loadModerators();
 
       const eventsRes = await api("events", "list");
@@ -1390,7 +1403,7 @@ document.getElementById('telegramLogin').addEventListener('click', async () => {
   })().finally(() => { telegramAuthInFlight = null; });
   return telegramAuthInFlight;
 });
-document.getElementById('authLogout').addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; sessionStorage.removeItem('eventhub_access_token'); setAuthMode('login'); setAuthVisible(true); });
+document.getElementById('authLogout').addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; isAdmin = false; sessionStorage.removeItem('eventhub_access_token'); syncAdminVisibility(); setAuthMode('login'); setAuthVisible(true); });
 setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
