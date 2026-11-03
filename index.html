@@ -1062,7 +1062,7 @@ async function init() {
         // для обычного открытия страницы по прямой ссылке.
         if (!openedInTelegram) setAuthVisible(true);
         else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
-        return;
+        return false;
       }
       user = { ...user, ...authenticatedUser }; setAuthVisible(false);
       renderOwnerProfile();
@@ -1079,6 +1079,7 @@ async function init() {
     }
       events = webhookCollection(eventsRes, ['events']);
       render();
+      return true;
     // Always start on the main event list. Referral data is retained for a later join action.
     })().finally(() => { appInitInFlight = null; });
     return appInitInFlight;
@@ -1395,24 +1396,28 @@ let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
 async function bootstrapMiniApp() {
   refreshTelegramContext();
-  const openedInTelegram = Boolean(telegramInitData || user?.id);
-  if (openedInTelegram && !telegramInitData && !user?.id && telegramBootstrapAttempts < 40) {
+  const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
+  const hasTelegramContext = Boolean(telegramInitData || user?.id);
+  if (hasTelegramBridge && !hasTelegramContext && telegramBootstrapAttempts < 40) {
     telegramBootstrapAttempts += 1;
     return;
   }
+  if (hasTelegramBridge && !hasTelegramContext) {
+    showAuthError('Telegram не передал данные Mini App. Закройте окно и откройте приложение повторно из Telegram.');
+    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
+    return;
+  }
   try {
-    await init();
+    const initialized = await init();
+    if (!hasTelegramBridge || initialized === true || telegramBootstrapAttempts >= 40) {
+      if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
+    }
   } catch (error) {
     console.error('Mini App init failed', error);
     showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
-  }
-  if (telegramBootstrapTimer) {
-    clearInterval(telegramBootstrapTimer);
-    telegramBootstrapTimer = null;
+    if (!hasTelegramBridge && telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
   }
 }
-document.addEventListener('DOMContentLoaded', bootstrapMiniApp, { once: true });
-window.addEventListener('load', bootstrapMiniApp, { once: true });
 telegramBootstrapTimer = setInterval(bootstrapMiniApp, 250);
 void bootstrapMiniApp();
 </script>
