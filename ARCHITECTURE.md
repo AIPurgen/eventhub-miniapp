@@ -10,6 +10,9 @@
 - GitHub repository: `https://github.com/AIPurgen/eventhub-miniapp`
 - Ветка production: `main`
 - GitHub Pages: `https://aipurgen.github.io/eventhub-miniapp/`
+- Telegram BotFather Mini App URL: `https://aipurgen.github.io/eventhub-miniapp/`
+- Telegram menu button URL: `https://aipurgen.github.io/eventhub-miniapp/`
+- Фактический entrypoint Mini App — GitHub Pages; запуск не идёт через n8n HTML.
 - Исходный файл: `C:\Downloads\123\LK_Client\github-pages\index.html`
 - Основной документ: `C:\Downloads\123\LK_Client\github-pages\ARCHITECTURE.md`
 - Frontend — один статический HTML-файл с CSS и JavaScript внутри.
@@ -25,6 +28,8 @@ Backend не хранится в GitHub frontend-репозитории. Он р
 - Production API webhook: `https://n8n.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad45f`
 - Social API — отдельный production workflow; его runtime URL указан ниже. Точный workflow ID не фиксируется в этом документе, чтобы не смешивать его с диагностическими export-файлами.
 - Social API webhook: `https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f`
+
+`EventHub_Main` (`02jlGIzn2H9UxNi0`) — исторический n8n workflow страницы и не является текущим источником запуска Mini App. Не путать его HTML с production frontend из GitHub Pages.
 
 Секреты n8n API и PostgreSQL находятся только в локальном файле:
 `C:\Downloads\123\LK_Client\.secrets\production.env`.
@@ -295,6 +300,8 @@ git -C C:\Downloads\123\LK_Client\github-pages push origin main
 6. Возвращает ли `users/get_moderators` массив модераторов.
 7. Не получает ли webhook HTTP 200 с пустым body.
 8. Не используется ли старый session token из `sessionStorage`.
+
+После повторного открытия Mini App нужно убедиться, что в n8n появился новый execution. Если после открытия по GitHub Pages новый execution отсутствует, запрос не вышел из WebView и нужно проверять production HTML/браузерную консоль, а не SQL-ветки n8n.
 
 Для проверки текущих n8n-данных используются локальные диагностические exports в корне рабочего каталога:
 
