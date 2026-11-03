@@ -1014,8 +1014,8 @@ async function init() {
         else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
         return;
       }
-      user = authenticatedUser; setAuthVisible(false);
-    renderOwnerProfile();
+      user = { ...user, ...authenticatedUser }; setAuthVisible(false);
+      renderOwnerProfile();
     isAdmin = Boolean(authenticatedUser.is_admin || authenticatedUser.role === 'admin' || authenticatedUser.role === 'administrator' || authenticatedUser.user_role === 'admin' || authenticatedUser.user_role === 'administrator');
     document.getElementById('adminBadge')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('fab').classList.toggle('hidden', !isAdmin);
@@ -1295,8 +1295,20 @@ function initialsForProfile(){ return ((user?.first_name || '')[0] || '') + ((us
 function avatarMarkup(el, photo){ if(!el)return; el.innerHTML=''; if(photo){ const img=document.createElement('img'); img.src=photo; img.alt=''; img.onerror=()=>{el.textContent=initialsForProfile();}; el.appendChild(img); } else el.textContent=initialsForProfile(); }
 function profileRole(){ return user?.is_admin ? 'Администратор' : (user?.role || 'Пользователь'); }
 function renderOwnerProfile(){
-  profileSettings=getProfileSettings(); const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя'; const display=profileSettings.display_name || tgName; const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
-  const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display; const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle; avatarMarkup(document.getElementById('ownerAvatar'),user?.photo_url);
+  profileSettings=getProfileSettings();
+  const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя';
+  const display=profileSettings.display_name || tgName;
+  const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
+  const role=user?.is_admin || user?.role === 'admin' || user?.role === 'administrator' || user?.user_role === 'admin' || user?.user_role === 'administrator' ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
+  const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display;
+  const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle;
+  avatarMarkup(document.getElementById('ownerAvatar'),user?.photo_url);
+  const profileName=document.getElementById('profileTelegramName'); if(profileName)profileName.textContent=tgName;
+  const profileUsername=document.getElementById('profileTelegramUsername'); if(profileUsername)profileUsername.textContent=handle;
+  const profileFullName=document.getElementById('profileTelegramFullName'); if(profileFullName)profileFullName.value=tgName;
+  const profileHandle=document.getElementById('profileTelegramHandle'); if(profileHandle)profileHandle.value=handle;
+  const profileRoleInput=document.getElementById('profileRole'); if(profileRoleInput)profileRoleInput.value=role;
+  avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url);
 }
 function openSettings(){
   renderOwnerProfile(); profileSettings=getProfileSettings(); const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя'; const handle=user?.username ? '@'+user.username : (user?.login || 'Не указан');
