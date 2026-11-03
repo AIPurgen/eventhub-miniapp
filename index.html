@@ -1074,11 +1074,13 @@ async function init() {
       setAuthVisible(false);
       captureReferral();
       showSkeleton();
-      let authRes = accessToken ? await api('auth', 'validate_session') : null;
+      // Telegram initData is the current authority for Mini App sessions.
+      // Do not let a stale session token hide the server's is_admin flag.
+      let authRes = (telegramInitData || user?.id) ? await api('auth', 'validate') : (accessToken ? await api('auth', 'validate_session') : null);
       let authenticatedUser = authUserFromResponse(authRes);
-      if (!authenticatedUser && (telegramInitData || user?.id)) {
+      if ((!authenticatedUser || !userIsAdmin(authenticatedUser)) && (telegramInitData || user?.id) && accessToken) {
           accessToken = '';
-          sessionStorage.removeItem('eventhub_access_token');
+          try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
           authRes = await api('auth', 'validate');
           authenticatedUser = authUserFromResponse(authRes);
       }
@@ -1093,9 +1095,9 @@ async function init() {
       // Keep Telegram identity, but let the server's validated account win for
       // id/role/flags.  The webhook may return user_id instead of id.
       user = { ...user, ...authenticatedUser, id: authenticatedUser.id ?? authenticatedUser.user_id ?? user.id };
+      isAdmin = userIsAdmin(authenticatedUser);
       setAuthVisible(false);
       renderOwnerProfile();
-      isAdmin = userIsAdmin(authenticatedUser);
       syncAdminVisibility();
       if (isAdmin) await loadModerators();
 
@@ -1371,7 +1373,7 @@ function profileStorageKey(){ return 'eventhub_profile_' + String(user?.id || us
 function getProfileSettings(){ try { return JSON.parse(localStorage.getItem(profileStorageKey()) || '{}'); } catch(e) { return {}; } }
 function initialsForProfile(){ return ((user?.first_name || '')[0] || '') + ((user?.last_name || '')[0] || '') || '?'; }
 function avatarMarkup(el, photo){ if(!el)return; el.innerHTML=''; if(photo){ const img=document.createElement('img'); img.src=photo; img.alt=''; img.onerror=()=>{el.textContent=initialsForProfile();}; el.appendChild(img); } else el.textContent=initialsForProfile(); }
-function profileRole(){ return user?.is_admin ? 'Администратор' : (user?.role || 'Пользователь'); }
+function profileRole(){ return userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь'); }
 function renderOwnerProfile(){
   profileSettings=getProfileSettings();
   const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя';
