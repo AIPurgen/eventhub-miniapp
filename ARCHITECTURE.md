@@ -57,6 +57,9 @@ Backend не хранится в GitHub frontend-репозитории. Он р
 - `saveNewEvent()` — создание события.
 - `captureReferral()` — сохранение Telegram startapp/referral-параметров.
 
+Ответы n8n могут приходить как объект, массив элементов или объект с полем `result`/`data`.
+`authUserFromResponse()` рекурсивно раскрывает эти варианты, чтобы роль и `is_admin` не терялись при обработке Telegram validate.
+
 ## 3. Авторизация
 
 ### Запуск из Telegram Mini App

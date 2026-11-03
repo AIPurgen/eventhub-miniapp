@@ -972,7 +972,21 @@ function showAuthError(message) { const error = document.getElementById('authErr
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
-function authUserFromResponse(response) { if (Array.isArray(response)) return response.find((item) => item && typeof item === 'object' && (item.id || item.user_id || item.access_token)) || null; if (response?.user && typeof response.user === 'object') return response.user; if (response?.data && Array.isArray(response.data)) return authUserFromResponse(response.data); if (response && typeof response === 'object' && (response.id || response.user_id || response.access_token)) return response; return null; }
+function authUserFromResponse(response) {
+  if (Array.isArray(response)) {
+    for (const item of response) {
+      const user = authUserFromResponse(item);
+      if (user) return user;
+    }
+    return null;
+  }
+  if (!response || typeof response !== 'object') return null;
+  if (response.result && typeof response.result === 'object') return authUserFromResponse(response.result);
+  if (response.user && typeof response.user === 'object') return authUserFromResponse(response.user);
+  if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) return authUserFromResponse(response.data);
+  if (response.id || response.user_id || response.access_token || response.is_admin !== undefined || response.role || response.user_role) return response;
+  return null;
+}
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
 async function init() {
     if (appInitInFlight) return appInitInFlight;
