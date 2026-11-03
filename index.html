@@ -1078,13 +1078,16 @@ async function init() {
       setAuthVisible(false);
       captureReferral();
       showSkeleton();
-      // Telegram initData is the current authority for Mini App sessions.
-      // Do not let a stale session token hide the server's is_admin flag.
-      let authRes = (telegramInitData || user?.id) ? await api('auth', 'validate') : (accessToken ? await api('auth', 'validate_session') : null);
+      // Validate the cached access-token session first, matching the working
+      // n8n Webhook flow. Use Telegram validation only when no valid session
+      // exists, so the two backend auth branches do not get mixed.
+      let authRes = accessToken ? await api('auth', 'validate_session') : null;
       let authenticatedUser = authUserFromResponse(authRes);
-      if ((!authenticatedUser || !userIsAdmin(authenticatedUser)) && (telegramInitData || user?.id) && accessToken) {
+      if (!authenticatedUser && accessToken) {
           accessToken = '';
           try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
+      }
+      if (!authenticatedUser && openedInTelegram) {
           authRes = await api('auth', 'validate');
           authenticatedUser = authUserFromResponse(authRes);
       }
@@ -1099,6 +1102,10 @@ async function init() {
       // Keep Telegram identity, but let the server's validated account win for
       // id/role/flags.  The webhook may return user_id instead of id.
       user = { ...user, ...authenticatedUser, id: authenticatedUser.id ?? authenticatedUser.user_id ?? user.id };
+      if (authenticatedUser.access_token) {
+        accessToken = String(authenticatedUser.access_token);
+        try { sessionStorage.setItem('eventhub_access_token', accessToken); } catch (_) {}
+      }
       isAdmin = userIsAdmin(authenticatedUser);
       setAuthVisible(false);
       renderOwnerProfile();
