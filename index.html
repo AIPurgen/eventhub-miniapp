@@ -1000,7 +1000,7 @@ async function init() {
       showSkeleton();
       let authRes = accessToken ? await api('auth', 'validate_session') : null;
       let authenticatedUser = authUserFromResponse(authRes);
-      if (!authenticatedUser && telegramInitData) {
+      if (!authenticatedUser && (telegramInitData || user?.id)) {
           accessToken = '';
           sessionStorage.removeItem('eventhub_access_token');
           authRes = await api('auth', 'validate');
@@ -1328,7 +1328,30 @@ setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
 updateProfileThemeButtons();
-init().catch((error) => { console.error(error); showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка')); });
+let telegramBootstrapAttempts = 0;
+let telegramBootstrapTimer = null;
+async function bootstrapMiniApp() {
+  refreshTelegramContext();
+  const openedInTelegram = Boolean(window.Telegram?.WebApp || telegramInitData || user?.id);
+  if (openedInTelegram && !telegramInitData && !user?.id && telegramBootstrapAttempts < 40) {
+    telegramBootstrapAttempts += 1;
+    return;
+  }
+  try {
+    await init();
+  } catch (error) {
+    console.error('Mini App init failed', error);
+    showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
+  }
+  if (telegramBootstrapTimer) {
+    clearInterval(telegramBootstrapTimer);
+    telegramBootstrapTimer = null;
+  }
+}
+document.addEventListener('DOMContentLoaded', bootstrapMiniApp, { once: true });
+window.addEventListener('load', bootstrapMiniApp, { once: true });
+telegramBootstrapTimer = setInterval(bootstrapMiniApp, 250);
+void bootstrapMiniApp();
 </script>
 <script>
 (() => {

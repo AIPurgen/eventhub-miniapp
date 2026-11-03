@@ -52,6 +52,8 @@ Backend не хранится в GitHub frontend-репозитории. Он р
    - `tg.initDataUnsafe.user`.
 4. `init()` выполняет автоматическую авторизацию и загружает события.
 
+Telegram bridge может отдать `initData` не в первый момент загрузки WebView. Поэтому bootstrap повторно вызывает `refreshTelegramContext()` после `DOMContentLoaded`, `load` и через короткий retry-интервал. Telegram auth запускается при наличии `tg_init_data` **или** `tg.initDataUnsafe.user.id`.
+
 Основные frontend-функции находятся в `index.html`:
 
 - `refreshTelegramContext()` — обновление Telegram-контекста.
