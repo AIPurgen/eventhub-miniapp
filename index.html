@@ -1067,11 +1067,11 @@ function syncAdminVisibility() {
   document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !visible);
 }
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
-async function init() {
+async function init(forceTelegramMode = false) {
     if (appInitInFlight) return appInitInFlight;
     appInitInFlight = (async () => {
       const telegramContext = refreshTelegramContext();
-      const openedInTelegram = Boolean(telegramContext.initData || telegramContext.user?.id);
+      const openedInTelegram = forceTelegramMode || Boolean(telegramContext.initData || telegramContext.user?.id);
       if (telegramContext.user?.id) renderOwnerProfile();
       // Не показываем форму во время автоматической Telegram-авторизации.
       // Для прямой ссылки форма появится ниже только после завершения проверки.
@@ -1433,7 +1433,9 @@ applyTheme(storedTheme);
 updateProfileThemeButtons();
 let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
+let telegramBootstrapStarted = false;
 async function bootstrapMiniApp() {
+  if (telegramBootstrapStarted) return;
   refreshTelegramContext();
   if (user?.id) renderOwnerProfile();
   const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
@@ -1443,19 +1445,26 @@ async function bootstrapMiniApp() {
     return;
   }
   if (hasTelegramBridge && !hasTelegramContext) {
-    showAuthError('Telegram не передал данные Mini App. Закройте окно и откройте приложение повторно из Telegram.');
-    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
-    return;
-  }
-  try {
-    const initialized = await init();
-    if (!hasTelegramBridge || initialized === true || telegramBootstrapAttempts >= 40) {
+    telegramBootstrapStarted = true;
+    showAuthError('Telegram не передал данные Mini App. Повторяем авторизацию…');
+    try {
+      await init(true);
+    } catch (error) {
+      console.error('Telegram bootstrap failed', error);
+      showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
+    } finally {
       if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
     }
+    return;
+  }
+  telegramBootstrapStarted = true;
+  try {
+    await init();
   } catch (error) {
     console.error('Mini App init failed', error);
     showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
-    if (!hasTelegramBridge && telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
+  } finally {
+    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
   }
 }
 telegramBootstrapTimer = setInterval(bootstrapMiniApp, 250);
