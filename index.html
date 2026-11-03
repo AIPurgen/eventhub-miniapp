@@ -1071,7 +1071,8 @@ async function init(forceTelegramMode = false) {
     if (appInitInFlight) return appInitInFlight;
     appInitInFlight = (async () => {
       const telegramContext = refreshTelegramContext();
-      const openedInTelegram = forceTelegramMode || Boolean(telegramContext.initData || telegramContext.user?.id);
+      const hasValidTelegramAuth = Boolean(telegramContext.initData);
+      const openedInTelegram = hasValidTelegramAuth;
       if (telegramContext.user?.id) renderOwnerProfile();
       // Не показываем форму во время автоматической Telegram-авторизации.
       // Для прямой ссылки форма появится ниже только после завершения проверки.
@@ -1087,7 +1088,7 @@ async function init(forceTelegramMode = false) {
           accessToken = '';
           try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
       }
-      if (!authenticatedUser && openedInTelegram) {
+      if (!authenticatedUser && hasValidTelegramAuth) {
           authRes = await api('auth', 'validate');
           authenticatedUser = authUserFromResponse(authRes);
       }
@@ -1095,7 +1096,7 @@ async function init(forceTelegramMode = false) {
         // В Telegram Mini App не переключаемся на логин/пароль: Telegram должен
         // авторизовать пользователя автоматически. Форма предназначена только
         // для обычного открытия страницы по прямой ссылке.
-        if (!openedInTelegram) setAuthVisible(true);
+        if (!openedInTelegram && !forceTelegramMode) setAuthVisible(true);
         else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
         return false;
       }
