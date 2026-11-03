@@ -1021,6 +1021,7 @@ async function init() {
     document.getElementById('fab').classList.toggle('hidden', !isAdmin);
     document.getElementById('organizerDashboardButton')?.classList.toggle('hidden', !isAdmin);
     document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);
+      if (isAdmin) await loadModerators();
 
       const eventsRes = await api("events", "list");
       if (eventsRes?.success === false && !eventsRes.empty_response) {
