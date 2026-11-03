@@ -668,7 +668,11 @@ async function api(entity, action, data = {}) {
         const context = refreshTelegramContext();
         const currentInitData = context.initData;
         const currentUser = context.user || {};
-        const auth = accessToken ? { access_token: accessToken, user: currentUser } : { tg_init_data: currentInitData, user: currentUser };
+        // auth/validate must always use the current Telegram Mini App context.
+        // A cached access token is only valid for session-based actions and can
+        // otherwise hide the server's current role/is_admin response.
+        const useTelegramAuth = entity === 'auth' && action === 'validate' && Boolean(currentInitData || currentUser?.id);
+        const auth = useTelegramAuth || !accessToken ? { tg_init_data: currentInitData, user: currentUser } : { access_token: accessToken, user: currentUser };
         const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
         const raw = await res.text();
         let parsed; try { parsed = raw ? JSON.parse(raw) : null; } catch (_) { parsed = raw; }
