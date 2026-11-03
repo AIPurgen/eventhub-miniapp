@@ -996,10 +996,14 @@ function authUserFromResponse(response) {
     try { return authUserFromResponse(JSON.parse(response)); } catch (_) { return null; }
   }
   if (response && typeof response === 'object' && !Array.isArray(response)) {
+    const authFields = {};
+    for (const key of ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'role', 'user_role']) {
+      if (response[key] !== undefined) authFields[key] = response[key];
+    }
     for (const key of ['body', 'response', 'json', 'account', 'auth_user', 'telegram_user', 'profile']) {
       if (response[key] && typeof response[key] === 'object') {
         const nested = authUserFromResponse(response[key]);
-        if (nested) return nested;
+        if (nested) return { ...nested, ...authFields };
       }
     }
   }
@@ -1011,9 +1015,9 @@ function authUserFromResponse(response) {
     return null;
   }
   if (!response || typeof response !== 'object') return null;
-  if (response.result && typeof response.result === 'object') return authUserFromResponse(response.result);
-  if (response.user && typeof response.user === 'object') return authUserFromResponse(response.user);
-  if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) return authUserFromResponse(response.data);
+  if (response.result && typeof response.result === 'object') return { ...authUserFromResponse(response.result), ...response };
+  if (response.user && typeof response.user === 'object') return { ...authUserFromResponse(response.user), ...response };
+  if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) return { ...authUserFromResponse(response.data), ...response };
   if (response.id || response.user_id || response.telegram_id || response.access_token || response.is_admin !== undefined || response.isAdmin !== undefined || response.role || response.user_role) return response;
   return null;
 }
@@ -1383,7 +1387,7 @@ function renderOwnerProfile(){
   const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя';
   const display=profileSettings.display_name || tgName;
   const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
-  const role=user?.is_admin || user?.role === 'admin' || user?.role === 'administrator' || user?.user_role === 'admin' || user?.user_role === 'administrator' ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
+  const role=userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
   const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display;
   const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle;
   avatarMarkup(document.getElementById('ownerAvatar'),user?.photo_url);
