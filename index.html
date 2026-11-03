@@ -476,7 +476,7 @@
 @media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:7px!important;padding-right:7px!important}.event-detail-actions .social-actions{gap:5px!important}.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important}.event-detail-actions small{font-size:9px!important}.guest-block{margin-left:0!important;margin-right:0!important}.guest-control{width:44px!important;height:44px!important;flex-basis:44px!important}.guest-count{font-size:28px!important}}
 </style></head>
 <body>
-<div id="authShell" class="auth-shell">
+<div id="authShell" class="auth-shell hidden">
   <section class="auth-card" aria-labelledby="authTitle">
     <div class="auth-brand" id="authTitle">VKOR запись</div>
     <p class="auth-subtitle">Записывайтесь на события быстро и удобно — через Telegram или обычный логин.</p>
@@ -596,6 +596,22 @@ const API_URL = "https://n8n.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad4
 let telegramInitData = String(tg?.initData || '');
 let user = tg?.initDataUnsafe?.user || {};
 let accessToken = sessionStorage.getItem('eventhub_access_token') || '';
+let telegramAuthInFlight = null;
+let appInitInFlight = null;
+
+function refreshTelegramContext() {
+    const webApp = window.Telegram?.WebApp;
+    if (webApp) tg = webApp;
+    if (tg) {
+        try { tg.ready(); } catch (_) {}
+        try { tg.expand(); } catch (_) {}
+    }
+    const initData = String(tg?.initData || '').trim();
+    const telegramUser = tg?.initDataUnsafe?.user;
+    if (initData) telegramInitData = initData;
+    if (telegramUser?.id) user = telegramUser;
+    return { initData: telegramInitData, user };
+}
 
 let isAdmin = false;
 let events = [];
@@ -638,8 +654,9 @@ function formatDateShort(dateStr) {
 
 async function api(entity, action, data = {}) {
     try {
-        const currentInitData = String(tg?.initData || telegramInitData || '');
-        const currentUser = tg?.initDataUnsafe?.user || user || {};
+        const context = refreshTelegramContext();
+        const currentInitData = context.initData;
+        const currentUser = context.user || {};
         const auth = accessToken ? { access_token: accessToken, user: currentUser } : { tg_init_data: currentInitData, user: currentUser };
         const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
         const raw = await res.text();
@@ -953,18 +970,37 @@ function applyTheme(theme) { document.documentElement.classList.toggle('dark', t
 
 function showAuthError(message) { const error = document.getElementById('authError'); if (error) error.textContent = message || ''; }
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
+function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
 function authUserFromResponse(response) { if (Array.isArray(response)) return response.find((item) => item && typeof item === 'object' && (item.id || item.user_id || item.access_token)) || null; if (response?.user && typeof response.user === 'object') return response.user; if (response?.data && Array.isArray(response.data)) return authUserFromResponse(response.data); if (response && typeof response === 'object' && (response.id || response.user_id || response.access_token)) return response; return null; }
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
 async function init() {
-    captureReferral();
-    showSkeleton();
-    let authRes = accessToken ? await api('auth', 'validate_session') : null;
-    let authenticatedUser = authUserFromResponse(authRes);
-    if (!authenticatedUser && (telegramInitData || user?.id)) { accessToken = ''; sessionStorage.removeItem('eventhub_access_token'); authRes = await api('auth', 'validate'); authenticatedUser = authUserFromResponse(authRes); }
-    if (!authenticatedUser && user?.id) authenticatedUser = { ...user, user_id: user.id };
-    if (!authenticatedUser) { setAuthVisible(true); return; }
-    user = authenticatedUser; setAuthVisible(false);
+    if (appInitInFlight) return appInitInFlight;
+    appInitInFlight = (async () => {
+      const telegramContext = refreshTelegramContext();
+      const openedInTelegram = Boolean(window.Telegram?.WebApp || telegramContext.initData);
+      // Не показываем форму во время автоматической Telegram-авторизации.
+      // Для прямой ссылки форма появится ниже только после завершения проверки.
+      setAuthVisible(false);
+      captureReferral();
+      showSkeleton();
+      let authRes = accessToken ? await api('auth', 'validate_session') : null;
+      let authenticatedUser = authUserFromResponse(authRes);
+      if (!authenticatedUser && telegramInitData) {
+          accessToken = '';
+          sessionStorage.removeItem('eventhub_access_token');
+          authRes = await api('auth', 'validate');
+          authenticatedUser = authUserFromResponse(authRes);
+      }
+      if (!authenticatedUser) {
+        // В Telegram Mini App не переключаемся на логин/пароль: Telegram должен
+        // авторизовать пользователя автоматически. Форма предназначена только
+        // для обычного открытия страницы по прямой ссылке.
+        if (!openedInTelegram) setAuthVisible(true);
+        else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
+        return;
+      }
+      user = authenticatedUser; setAuthVisible(false);
     renderOwnerProfile();
     isAdmin = Boolean(authenticatedUser.is_admin || authenticatedUser.role === 'admin' || authenticatedUser.role === 'administrator' || authenticatedUser.user_role === 'admin' || authenticatedUser.user_role === 'administrator');
     document.getElementById('adminBadge')?.classList.toggle('hidden', !isAdmin);
@@ -972,13 +1008,15 @@ async function init() {
     document.getElementById('organizerDashboardButton')?.classList.toggle('hidden', !isAdmin);
     document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);
 
-    const eventsRes = await api("events", "list");
-    if (eventsRes?.success === false && !eventsRes.empty_response) {
+      const eventsRes = await api("events", "list");
+      if (eventsRes?.success === false && !eventsRes.empty_response) {
         showToast(`Ошибка webhook: ${eventsRes.error || 'не удалось загрузить события'}`, 'error');
     }
-    events = Array.isArray(eventsRes) ? eventsRes : (eventsRes?.events || []);
-    render();
+      events = Array.isArray(eventsRes) ? eventsRes : (eventsRes?.events || []);
+      render();
     // Always start on the main event list. Referral data is retained for a later join action.
+    })().finally(() => { appInitInFlight = null; });
+    return appInitInFlight;
 }
 
 function render() {
@@ -1257,7 +1295,20 @@ function saveProfileSettings(){ profileSettings={display_name:document.getElemen
 
 document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
 document.getElementById('authForm').addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('authSubmit'); button.disabled = true; try { if (await authRequest(window.authMode || 'login')) await init(); } finally { button.disabled = false; } });
-document.getElementById('telegramLogin').addEventListener('click', async () => { tg = window.Telegram?.WebApp || tg; telegramInitData = String(tg?.initData || telegramInitData || ''); user = tg?.initDataUnsafe?.user || user || {}; if (!telegramInitData && !user?.id) { showAuthError('Telegram не передал данные Mini App.'); return; } accessToken = ''; sessionStorage.removeItem('eventhub_access_token'); showAuthError(''); await init(); });
+document.getElementById('telegramLogin').addEventListener('click', async () => {
+  if (telegramAuthInFlight) return telegramAuthInFlight;
+  telegramAuthInFlight = (async () => {
+    const context = refreshTelegramContext();
+    if (!context.initData) { showAuthError('Откройте приложение внутри Telegram — данные Mini App ещё не получены.'); return; }
+    const button = document.getElementById('telegramLogin');
+    if (button) button.disabled = true;
+    accessToken = '';
+    sessionStorage.removeItem('eventhub_access_token');
+    showAuthError('');
+    try { await init(); } finally { if (button) button.disabled = false; }
+  })().finally(() => { telegramAuthInFlight = null; });
+  return telegramAuthInFlight;
+});
 document.getElementById('authLogout').addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; sessionStorage.removeItem('eventhub_access_token'); setAuthMode('login'); setAuthVisible(true); });
 setAuthMode('login');
 const storedTheme = localStorage.getItem('eventhub_theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
