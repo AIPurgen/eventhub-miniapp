@@ -1043,6 +1043,7 @@ async function init() {
     appInitInFlight = (async () => {
       const telegramContext = refreshTelegramContext();
       const openedInTelegram = Boolean(telegramContext.initData || telegramContext.user?.id);
+      if (telegramContext.user?.id) renderOwnerProfile();
       // Не показываем форму во время автоматической Telegram-авторизации.
       // Для прямой ссылки форма появится ниже только после завершения проверки.
       setAuthVisible(false);
@@ -1396,6 +1397,7 @@ let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
 async function bootstrapMiniApp() {
   refreshTelegramContext();
+  if (user?.id) renderOwnerProfile();
   const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
   const hasTelegramContext = Boolean(telegramInitData || user?.id);
   if (hasTelegramBridge && !hasTelegramContext && telegramBootstrapAttempts < 40) {
