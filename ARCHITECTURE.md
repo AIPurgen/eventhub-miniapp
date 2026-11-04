@@ -52,7 +52,7 @@ Backend не хранится в GitHub frontend-репозитории. Он р
    - `tg.initDataUnsafe.user`.
 4. `init()` выполняет автоматическую авторизацию и загружает события.
 
-Telegram bridge может отдать `initData` не в первый момент загрузки WebView. Поэтому bootstrap повторно вызывает `refreshTelegramContext()` после `DOMContentLoaded`, `load` и через короткий retry-интервал. Telegram auth запускается при наличии `tg_init_data` **или** `tg.initDataUnsafe.user.id`.
+Telegram bridge может отдать `initData` не в первый момент загрузки WebView. Поэтому bootstrap повторно вызывает `refreshTelegramContext()` после `DOMContentLoaded`, `load` и через короткий retry-интервал. `tg.initDataUnsafe.user` может использоваться для предварительного отображения профиля, но Telegram auth запускается только при наличии непустого подписанного `tg_init_data`. Один только `tg.initDataUnsafe.user.id` не является доказательством авторизации.
 
 Основные frontend-функции находятся в `index.html`:
 
@@ -64,10 +64,17 @@ Telegram bridge может отдать `initData` не в первый моме
 - `saveNewEvent()` — создание события.
 - `captureReferral()` — сохранение Telegram startapp/referral-параметров.
 
-Ответы n8n могут приходить как объект, массив элементов или объект с полем `result`/`data`.
-`authUserFromResponse()` рекурсивно раскрывает эти варианты, чтобы роль и `is_admin` не терялись при обработке Telegram validate.
-- Frontend также раскрывает оболочки `body`/`response`/`json`, нормализует `is_admin`/`isAdmin`/`role`/`user_role` и использует единый разбор ответов для списка событий, модераторов и создания события.
-- Production webhook может возвращать n8n-ответ как массив массивов (`[[...]]`); `webhookCollection()` рекурсивно распрямляет такую структуру перед отрисовкой.
+Ответы n8n могут приходить как объект, массив элементов, JSON-строка или объект с полем `result`/`data`.
+Frontend использует общий слой нормализации ответа:
+
+- `parseWebhookValue()` рекурсивно разбирает JSON-строки, включая двойную сериализацию, и считает строку из пробелов пустым ответом.
+- `webhookError()` обнаруживает `success: false`, `ok: false`, `status: "error"` и такие же ошибки внутри массивов и n8n-оболочек.
+- `authUserFromResponse()` раскрывает `body`/`response`/`json`/`result`/`data` и auth-поля, чтобы роль и `is_admin` не терялись при Telegram validate.
+- `webhookCollection()` раскрывает `body`/`response`/`json`/`result`/`data`/`items`/`rows`/`records`, распрямляет массивы n8n и не превращает служебные/error-объекты в события или модераторов.
+- `webhookValue()` извлекает значения из тех же оболочек для создания события и action-ответов.
+- `isWebhookSuccess()` поддерживает boolean-результаты и значения `true`/`"true"` внутри n8n-массивов.
+
+Production webhook может возвращать n8n-ответ как массив массивов (`[[...]]`); frontend распрямляет такую структуру перед отрисовкой. Неизвестный объект считается строкой только при наличии `id`, чтобы `{success: true}` или `{error: "..."}` не отображались как бизнес-данные.
 
 ## 3. Авторизация
 
@@ -79,7 +86,7 @@ Telegram bridge может отдать `initData` не в первый моме
 <div id="authShell" class="auth-shell hidden">
 ```
 
-При наличии `Telegram.WebApp` или `tg.initData` frontend считает запуск Telegram Mini App подтверждённым и сначала выполняет автоматическую авторизацию.
+При наличии подписанного `tg.initData` frontend считает Telegram-контекст пригодным для автоматической авторизации. Наличие только `Telegram.WebApp` или `tg.initDataUnsafe.user` позволяет отобразить предварительный профиль, но не заменяет signed auth context.
 
 Основной auth-запрос:
 
@@ -125,7 +132,7 @@ Backend Telegram-ветка использует Telegram-пользовател
 Access token сохраняется в `sessionStorage` под ключом:
 `eventhub_access_token`.
 
-При наличии access token сначала выполняется `auth/validate_session`. Если сессия недействительна, frontend очищает токен и пытается использовать Telegram `auth/validate`, если Telegram-контекст доступен.
+При наличии access token сначала выполняется `auth/validate_session`. Если сессия недействительна, frontend очищает токен и пытается использовать Telegram `auth/validate` только при наличии signed `tg_init_data`.
 
 ## 4. Единый API-контекст
 
@@ -265,6 +272,8 @@ git -C C:\Downloads\123\LK_Client\github-pages push origin main
 
 После push нужно проверить raw GitHub и GitHub Pages. CDN GitHub Pages может обновляться с задержкой.
 
+Текущий production commit публикуется из ветки `main`; отдельного npm build нет. Для этой структуры достаточно отправить отслеживаемые `index.html`, `ARCHITECTURE.md` и `BACKLOG.md` в `origin/main`.
+
 ### Обновление HTML в n8n
 
 Скрипт:
@@ -297,13 +306,14 @@ git -C C:\Downloads\123\LK_Client\github-pages push origin main
 При проблемах проверять в таком порядке:
 
 1. GitHub Pages отдаёт ли новый commit, а не старый CDN-кэш.
-2. В HTML есть ли `authShell hidden`, `refreshTelegramContext` и `openedInTelegram`.
-3. Передаётся ли `tg_init_data` в Network POST-запросе.
-4. Возвращает ли `auth/validate` JSON пользователя с ролью.
-5. Возвращает ли `events/list` массив событий.
-6. Возвращает ли `users/get_moderators` массив модераторов.
-7. Не получает ли webhook HTTP 200 с пустым body.
-8. Не используется ли старый session token из `sessionStorage`.
+2. В HTML есть ли `authShell hidden`, `refreshTelegramContext`, `parseWebhookValue` и `webhookError`.
+3. Передаётся ли непустой signed `tg_init_data` в Network POST-запросе `auth/validate`.
+4. Возвращает ли `auth/validate` JSON пользователя с ролью, а не `success: false` внутри n8n envelope.
+5. Возвращает ли `events/list` массив событий; error-object не должен превращаться в карточку.
+6. Возвращает ли `users/get_moderators` массив модераторов; `{success: true}` не должен создавать пустую option.
+7. Не получает ли webhook HTTP 200 с пустым или пробельным body.
+8. Корректно ли обрабатываются JSON-string, двойной JSON и массивы `[{json: {...}}]`.
+9. Не используется ли старый session token из `sessionStorage`.
 
 После повторного открытия Mini App нужно убедиться, что в n8n появился новый execution. Если после открытия по GitHub Pages новый execution отсутствует, запрос не вышел из WebView и нужно проверять production HTML/браузерную консоль, а не SQL-ветки n8n.
 

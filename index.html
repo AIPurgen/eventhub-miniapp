@@ -671,13 +671,19 @@ async function api(entity, action, data = {}) {
         // auth/validate must always use the current Telegram Mini App context.
         // A cached access token is only valid for session-based actions and can
         // otherwise hide the server's current role/is_admin response.
-        const useTelegramAuth = entity === 'auth' && action === 'validate' && Boolean(currentInitData || currentUser?.id);
-        const auth = useTelegramAuth || !accessToken ? { tg_init_data: currentInitData, user: currentUser } : { access_token: accessToken, user: currentUser };
+        // Telegram auth is valid only with the signed initData string. The
+        // unsafe user object is useful for rendering a profile, but must never
+        // be treated as authentication material for n8n.
+        const useTelegramAuth = entity === 'auth' && action === 'validate' && Boolean(currentInitData);
+        const auth = useTelegramAuth || !accessToken
+          ? { tg_init_data: currentInitData, user: currentUser }
+          : { access_token: accessToken, user: currentUser };
         const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
         const raw = await res.text();
-        let parsed; try { parsed = raw ? JSON.parse(raw) : null; } catch (_) { parsed = raw; }
+        const parsed = parseWebhookValue(raw);
         if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
-        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true };
+        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true, http_status: res.status };
+        if (webhookError(parsed)) return { success: false, error: webhookError(parsed), http_status: res.status, webhook_response: parsed };
         return parsed;
     } catch (e) {
         console.error(e);
@@ -988,13 +994,35 @@ function showAuthError(message) { const error = document.getElementById('authErr
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
+function parseWebhookValue(value, depth = 0) {
+  if (depth > 4 || value === null || value === undefined) return value;
+  if (typeof value !== 'string') return value;
+  const text = value.trim();
+  if (!text) return null;
+  try { return parseWebhookValue(JSON.parse(text), depth + 1); } catch (_) { return value; }
+}
+function webhookError(response, depth = 0) {
+  const value = parseWebhookValue(response, depth);
+  if (depth > 4 || value === null || value === undefined) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) { const error = webhookError(item, depth + 1); if (error) return error; }
+    return null;
+  }
+  if (typeof value !== 'object') return null;
+  if (value.success === false || value.ok === false || String(value.status ?? '').toLowerCase() === 'error') {
+    return String(value.error || value.message || value.detail || 'Ошибка webhook');
+  }
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
+    if (value[key] !== undefined) { const error = webhookError(value[key], depth + 1); if (error) return error; }
+  }
+  return null;
+}
 function authUserFromResponse(response) {
   // n8n's `allIncomingItems` response is sometimes a JSON string (and can
   // contain the account under one of several envelope names).  Normalize it
   // before looking at the account so role/is_admin are not lost.
-  if (typeof response === 'string') {
-    try { return authUserFromResponse(JSON.parse(response)); } catch (_) { return null; }
-  }
+  response = parseWebhookValue(response);
+  if (response === null || response === undefined || response === '') return null;
   if (Array.isArray(response)) {
     for (const item of response) {
       const user = authUserFromResponse(item);
@@ -1002,7 +1030,7 @@ function authUserFromResponse(response) {
     }
     return null;
   }
-  if (!response || typeof response !== 'object') return null;
+  if (!response || typeof response !== 'object' || webhookError(response)) return null;
   const accountKeys = ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'role', 'user_role', 'userRole'];
   const account = {};
   for (const key of accountKeys) {
@@ -1018,6 +1046,7 @@ function authUserFromResponse(response) {
   return null;
 }
 function webhookValue(response, keys = []) {
+  response = parseWebhookValue(response);
   if (Array.isArray(response)) {
     for (const item of response) {
       const value = webhookValue(item, keys);
@@ -1025,11 +1054,11 @@ function webhookValue(response, keys = []) {
     }
     return response;
   }
-  if (!response || typeof response !== 'object') return response;
+  if (!response || typeof response !== 'object' || webhookError(response)) return null;
   for (const key of keys) {
     if (response[key] !== undefined) return response[key];
   }
-  for (const key of ['body', 'response', 'json', 'result', 'data']) {
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
     if (response[key] !== undefined) {
       const value = webhookValue(response[key], keys);
       if (value !== null && value !== undefined) return value;
@@ -1038,19 +1067,20 @@ function webhookValue(response, keys = []) {
   return response;
 }
 function webhookCollection(response, keys = []) {
-  if (typeof response === 'string') { try { return webhookCollection(JSON.parse(response), keys); } catch (_) { return []; } }
+  response = parseWebhookValue(response);
+  if (response === null || response === undefined || response === '') return [];
   if (Array.isArray(response)) return response.reduce((all, item) => all.concat(webhookCollection(item, keys)), []);
-  if (!response || typeof response !== 'object') return [];
+  if (!response || typeof response !== 'object' || webhookError(response)) return [];
   for (const key of keys) if (response[key] !== undefined) return webhookCollection(response[key], []);
-  for (const key of ['body', 'response', 'json', 'result', 'data']) {
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
     if (response[key] !== undefined) {
       const items = webhookCollection(response[key], keys);
       if (items.length) return items;
     }
   }
-  // n8n `allIncomingItems` normally returns a plain array of row objects.
-  // Keep a row instead of dropping it when there is no envelope key.
-  return [response];
+  // n8n `allIncomingItems` normally returns plain row objects. Do not turn
+  // arbitrary status/error objects into fake events or moderators.
+  return response.id !== undefined ? [response] : [];
 }
 function truthyFlag(value) {
   return value === true || value === 1 || ['true', '1', 'yes', 'admin', 'administrator'].includes(String(value ?? '').trim().toLowerCase());
@@ -1158,6 +1188,8 @@ function closeEventDetail() {
 function notifyUser(message) { if (tg?.showAlert) tg.showAlert(message); else if (typeof showToast === "function") showToast(message, "error"); else window.alert(message); }
 
 function isWebhookSuccess(response, expectedKey) {
+    response = parseWebhookValue(response);
+    if (webhookError(response)) return false;
     if (response && typeof response === "object" && !Array.isArray(response)) {
         if (response.error || response.errors) return false;
         if (response.success === false || response.ok === false) return false;
@@ -1174,12 +1206,14 @@ function isWebhookSuccess(response, expectedKey) {
     }
 
     // Самый частый ваш случай: массив с одним объектом
-    if (Array.isArray(response) && response.length === 1) {
-        const item = response[0];
-        if (typeof item === 'object' && item !== null) {
-            if (item[expectedKey] === true) return true;
-            // на всякий случай — если есть любое true
-            if (Object.values(item).some(v => v === true)) return true;
+    if (Array.isArray(response)) {
+        for (const item of response) {
+            if (item && typeof item === 'object') {
+                if (item[expectedKey] === true || item[expectedKey] === 'true') return true;
+                if (item.success === true || item.ok === true || item.updated === true || item.joined === true || item.left === true) return true;
+                const nested = webhookValue(item, [expectedKey]);
+                if (nested === true || nested === 'true') return true;
+            }
         }
     }
 
@@ -1440,22 +1474,19 @@ async function bootstrapMiniApp() {
   refreshTelegramContext();
   if (user?.id) renderOwnerProfile();
   const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
-  const hasTelegramContext = Boolean(telegramInitData || user?.id);
+  // The unsafe Telegram user object may appear before the signed initData.
+  // Wait for the latter because it is the only value accepted for auth.
+  const hasTelegramContext = Boolean(telegramInitData);
   if (hasTelegramBridge && !hasTelegramContext && telegramBootstrapAttempts < 40) {
     telegramBootstrapAttempts += 1;
     return;
   }
   if (hasTelegramBridge && !hasTelegramContext) {
+    // Do not send an auth request with an empty tg_init_data value. That can
+    // only produce a backend rejection and makes the client appear to loop.
     telegramBootstrapStarted = true;
-    showAuthError('Telegram не передал данные Mini App. Повторяем авторизацию…');
-    try {
-      await init(true);
-    } catch (error) {
-      console.error('Telegram bootstrap failed', error);
-      showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
-    } finally {
-      if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
-    }
+    showAuthError('Telegram не передал подписанные данные Mini App. Закройте окно и откройте приложение из Telegram ещё раз.');
+    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
     return;
   }
   telegramBootstrapStarted = true;
