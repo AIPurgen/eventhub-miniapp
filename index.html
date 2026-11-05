@@ -584,7 +584,7 @@
       <div class="settings-section"><h4>Данные Telegram</h4><div class="settings-field"><label>ФИО из Telegram</label><input id="profileTelegramFullName" readonly></div><div class="settings-field"><label>Telegram username</label><input id="profileTelegramHandle" readonly></div><div class="settings-field"><label>Текущая роль</label><input id="profileRole" readonly></div><p class="settings-note">Эти данные берутся из Telegram или учетной записи и не редактируются в приложении.</p></div>
       <div class="settings-section"><h4>О себе</h4><div class="settings-field"><label for="profileDisplayName">Отображаемое имя</label><input id="profileDisplayName" maxlength="80" placeholder="Как к вам обращаться"></div><div class="settings-field"><label for="profileContact">Контакты</label><input id="profileContact" maxlength="120" placeholder="Телефон, сайт или другой способ связи"></div><div class="settings-field"><label for="profileBio">Информация о себе</label><textarea id="profileBio" maxlength="600" placeholder="Расскажите немного о себе"></textarea></div></div>
       <div class="settings-section"><h4>Оформление</h4><div class="appearance-row"><div class="appearance-label"><strong>Тема</strong><span>Выберите удобный режим</span></div><div class="theme-choice"><button id="settingsLightTheme" type="button" onclick="setProfileTheme('light')">Светлая</button><button id="settingsDarkTheme" type="button" onclick="setProfileTheme('dark')">Тёмная</button></div></div></div>
-      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button></div>
+      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button><button class="btn-secondary" type="button" onclick="copyAuthTrace()">Скопировать диагностику авторизации</button></div>
     </div>
   </div>
 </section>
@@ -679,6 +679,13 @@ async function api(entity, action, data = {}) {
         const auth = useTelegramAuth || !accessToken
           ? { tg_init_data: currentInitData, user: currentUser }
           : { access_token: accessToken, user: currentUser };
+        if (entity === 'auth') recordAuthTrace('auth_request', {
+          action,
+          auth_mode: useTelegramAuth ? 'telegram_init_data' : (accessToken ? 'access_token' : 'empty_auth'),
+          has_signed_init_data: Boolean(currentInitData),
+          telegram_user_id_present: Boolean(currentUser?.id),
+          request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
+        });
         const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
         const raw = await res.text();
         const parsed = parseWebhookValue(raw);
@@ -686,6 +693,8 @@ async function api(entity, action, data = {}) {
           action,
           http_status: res.status,
           ok: res.ok,
+          raw_length: raw.length,
+          raw_prefix: raw.slice(0, 80).replace(/[\r\n\t]/g, ' '),
           shape: webhookShape(parsed),
           error: webhookError(parsed) || null
         });
@@ -1014,6 +1023,22 @@ function recordAuthTrace(event, details = {}) {
   try { localStorage.setItem('eventhub_auth_debug', JSON.stringify(window.__eventhubAuthDebug)); } catch (_) {}
   if (typeof console !== 'undefined' && console.info) console.info('[EventHub auth]', entry);
 }
+function copyAuthTrace() {
+  const trace = JSON.stringify({
+    generated_at: new Date().toISOString(),
+    url: location.href.split('?')[0],
+    auth_state: authState,
+    trace: window.__eventhubAuthDebug || []
+  }, null, 2);
+  const done = () => showToast('Диагностика скопирована', 'success');
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(trace).then(done).catch(() => fallbackCopy(trace, done));
+  else fallbackCopy(trace, done);
+}
+function fallbackCopy(text, done) {
+  const area = document.createElement('textarea'); area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.appendChild(area); area.select(); try { document.execCommand('copy'); done(); } catch (_) { showToast('Не удалось скопировать диагностику', 'error'); } area.remove();
+}
+window.copyAuthTrace = copyAuthTrace;
 function parseWebhookValue(value, depth = 0) {
   if (depth > 4 || value === null || value === undefined) return value;
   if (typeof value !== 'string') return value;
@@ -1150,6 +1175,15 @@ async function init(forceTelegramMode = false) {
       // session may contain an older role and must not mask Telegram validate.
       let authRes = hasValidTelegramAuth ? await api('auth', 'validate') : (accessToken ? await api('auth', 'validate_session') : null);
       let authenticatedUser = authUserFromResponse(authRes);
+      recordAuthTrace('auth_parsed', {
+        response_shape: webhookShape(authRes),
+        account_keys: Object.keys(authenticatedUser || {}).filter(key => !['access_token'].includes(key)).slice(0, 30),
+        has_id: Boolean(authenticatedUser?.id || authenticatedUser?.user_id),
+        has_is_admin: authenticatedUser?.is_admin !== undefined,
+        is_admin_value_type: authenticatedUser?.is_admin === undefined ? 'missing' : typeof authenticatedUser.is_admin,
+        normalized_is_admin: authenticatedUser ? userIsAdmin(authenticatedUser) : false,
+        role_present: Boolean(authenticatedUser?.role || authenticatedUser?.user_role || authenticatedUser?.userRole)
+      });
       if (!authenticatedUser && accessToken && !hasValidTelegramAuth) {
           accessToken = '';
           try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
@@ -1463,6 +1497,8 @@ function renderOwnerProfile(){
   const display=profileSettings.display_name || tgName;
   const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
   const role=userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
+  recordAuthTrace('profile_render', { auth_state: authState, is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role, user_keys: Object.keys(user || {}).filter(key => !['access_token'].includes(key)).slice(0, 30) });
+  if (authState === 'ready' && isAdmin !== userIsAdmin(user)) recordAuthTrace('role_mismatch', { is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role });
   const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display;
   const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle;
   avatarMarkup(document.getElementById('ownerAvatar'),user?.photo_url);
