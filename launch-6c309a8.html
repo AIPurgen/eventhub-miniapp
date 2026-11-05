@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ВКОР запись</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --secondary: #8e8e93;
+            --accent: #007aff;
+            --green: #30b800;
+            --gray: #d1d1d6;
+            --lightgray: #f5f5f7;
+            --red: #ff3b30;
+        }
+        .dark {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --text: #ffffff;
+            --secondary: #8e8e93;
+            --gray: #3a3a3c;
+            --lightgray: #2c2c2e;
+        }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, system-ui, 'SF Pro Display', sans-serif;
+            min-height: 100dvh;
+        }
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 140px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 34px;
+            font-weight: 800;
+            margin: 0;
+        }
+        .admin-badge {
+            background: #30b800;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .event-card {
+            background: var(--card);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            transition: all .3s;
+        }
+        .event-card:active {
+            transform: scale(0.98);
+        }
+        .event-inner {
+            padding: 24px;
+        }
+        .event-title {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin: 0 0 8px;
+        }
+        .event-date {
+            font-size: 17px;
+            color: var(--secondary);
+            margin: 0 0 16px;
+        }
+        .event-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .event-footer span {
+            font-size: 17px;
+        }
+        .price {
+            font-weight: 700;
+            font-size: 19px;
+            color: var(--accent);
+        }
+        .price.free {
+            color: var(--green);
+        }
+        .empty {
+            text-align: center;
+            padding: 100px 40px;
+            color: var(--secondary);
+        }
+        .empty h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 12px;
+        }
+        .empty p {
+            font-size: 18px;
+            margin: 0;
+        }
+        .fab {
+            position: fixed;
+            bottom: 34px;
+            right: 20px;
+            width: 64px;
+            height: 64px;
+            border-radius: 32px;
+            background: var(--accent);
+            color: white;
+            font-size: 36px;
+            font-weight: 300;
+            border: none;
+            box-shadow: 0 12px 32px rgba(0,122,255,0.40);
+            z-index: 100;
+            transition: all .25s;
+            cursor: pointer;
+        }
+        .fab:active {
+            transform: scale(0.88);
+        }
+        .datetime-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: flex-end;
+            z-index: 1000;
+        }
+        .datetime-modal.show {
+            display: flex;
+        }
+        .datetime-panel {
+            background: var(--card);
+            border-radius: 28px 28px 0 0;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
+        }
+        .datetime-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 10px;
+        }
+        .datetime-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .datetime-btn {
+            color: var(--accent);
+            font-size: 17px;
+            font-weight: 600;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .selector-row {
+            display: flex;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .selector-chip {
+            flex: 1;
+            padding: 16px 20px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .25s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .selector-chip:active {
+            transform: scale(0.96);
+        }
+        .date-chip {
+            background: var(--accent);
+            color: white;
+        }
+        .time-chip {
+            background: var(--lightgray);
+            color: var(--text);
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        .form-group label {
+            font-size: 15px;
+            color: var(--secondary);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            border-radius: 14px;
+            background: var(--lightgray);
+            border: none;
+            outline: none;
+            box-sizing: border-box;
+            color: var(--text);
+        }
+        .form-group textarea {
+            height: 80px;
+            resize: none;
+        }
+        .create-form-bottom-padding {
+            padding-bottom: 100px;
+        }
+        .picker-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: flex-end;
+            z-index: 1001;
+        }
+        .picker-overlay.show {
+            display: flex;
+        }
+        .picker-panel {
+            background: var(--card);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 28px 28px 0 0;
+            padding: 20px;
+            max-height: 70dvh;
+            overflow-y: auto;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7,1fr);
+            gap: 8px;
+            margin-top: 16px;
+            text-align: center;
+        }
+        .calendar-day-header {
+            font-size: 13px;
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 8px 0;
+        }
+        .calendar-day {
+            padding: 14px 0;
+            font-size: 16px;
+            border-radius: 16px;
+            transition: all .2s;
+            cursor: pointer;
+        }
+        .calendar-day.today,
+        .calendar-day.selected {
+            background: var(--accent);
+            color: white;
+        }
+        .calendar-day.inactive {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: default;
+        }
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .time-btn {
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 16px;
+            background: var(--lightgray);
+            color: var(--text);
+            font-weight: 600;
+            transition: all .25s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .time-btn.selected {
+            background: var(--accent);
+            color: white;
+        }
+        .fixed-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card);
+            border-top: 1px solid var(--gray);
+            padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+            backdrop-filter: blur(12px);
+            z-index: 1002;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 17px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all .25s;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .btn-primary:disabled {
+            background: #c0c0c5;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .month-nav {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            padding: 0 16px;
+            line-height: 1;
+        }
+        .month-nav.inactive {
+            color: var(--secondary);
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+        .month-title {
+            font-size: 18px;
+            font-weight: 600;
+            min-width: 160px;
+            text-align: center;
+        }
+    
+        .auth-shell{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at top right,rgba(99,102,241,.22),transparent 45%),var(--bg);transition:opacity .3s,visibility .3s}
+        .auth-shell.hidden{opacity:0;visibility:hidden;pointer-events:none}
+        .auth-card{width:min(100%,420px);background:var(--card);border:1px solid rgba(128,128,128,.18);border-radius:30px;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.18);backdrop-filter:blur(22px);animation:authRise .45s ease both}
+        .auth-brand{font-size:30px;font-weight:800;letter-spacing:-.04em;margin-bottom:8px}.auth-subtitle{color:var(--secondary);line-height:1.5;margin:0 0 24px}
+        .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;background:var(--lightgray);border-radius:16px;margin-bottom:18px}.auth-tab{border:0;border-radius:12px;padding:11px;background:transparent;color:var(--secondary);font:inherit;font-weight:700;cursor:pointer}.auth-tab.active{background:var(--card);color:var(--text);box-shadow:0 3px 12px rgba(0,0,0,.08)}
+        .auth-form{display:grid;gap:12px}.auth-form input{width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:15px;padding:14px 16px;background:var(--lightgray);color:var(--text);font:inherit;outline:none}.auth-form input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,122,255,.16)}
+        .auth-primary{border:0;border-radius:15px;padding:15px;background:linear-gradient(135deg,#6366f1,var(--accent));color:#fff;font:inherit;font-weight:800;cursor:pointer;box-shadow:0 10px 24px rgba(0,122,255,.28);transition:transform .2s}.auth-primary:active{transform:scale(.98)}.auth-primary:disabled{opacity:.6;cursor:wait}
+        .auth-telegram{border:1px solid rgba(128,128,128,.25);border-radius:15px;padding:14px;background:transparent;color:var(--text);font:inherit;font-weight:700;cursor:pointer}.auth-divider{display:flex;align-items:center;gap:10px;color:var(--secondary);font-size:13px;margin:18px 0}.auth-divider:before,.auth-divider:after{content:'';height:1px;flex:1;background:var(--gray)}.auth-error{min-height:20px;color:var(--red);font-size:14px;line-height:1.35}.auth-logout{position:fixed;top:14px;right:16px;z-index:1200;border:0;border-radius:12px;padding:8px 12px;background:var(--lightgray);color:var(--secondary);cursor:pointer;display:none}@keyframes authRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    
+/* VKOR visual refresh */
+:root{--bg:#eef2ff;--card:rgba(255,255,255,.78);--card-solid:#fff;--text:#182033;--secondary:#71809b;--accent:#5b5cf0;--accent-2:#1688ff;--green:#18a878;--gray:rgba(109,125,158,.18);--lightgray:rgba(115,130,164,.10);--red:#eb5b68;--shadow:0 22px 60px rgba(50,65,125,.13);--shadow-soft:0 10px 30px rgba(50,65,125,.10)}
+.dark{--bg:#0d1120;--card:rgba(27,34,58,.78);--card-solid:#1b223a;--text:#f7f9ff;--secondary:#a3acc4;--accent:#8587ff;--accent-2:#48a6ff;--green:#45d3a0;--gray:rgba(177,190,225,.18);--lightgray:rgba(177,190,225,.10);--shadow:0 24px 70px rgba(0,0,0,.32);--shadow-soft:0 12px 34px rgba(0,0,0,.25)}
+/* Event details use the same VKOR visual language as the home screen. */
+.event-detail-modal{align-items:flex-end;background:rgba(24,32,51,.38);backdrop-filter:blur(8px)}
+.event-detail-panel{width:min(100%,760px);max-height:min(88dvh,760px);border:1px solid rgba(255,255,255,.5);border-radius:30px 30px 0 0;background:var(--card-solid);box-shadow:var(--shadow);backdrop-filter:blur(24px)}
+.event-detail-content{padding:0 0 126px}.event-detail-body{padding:0 clamp(20px,4vw,40px)}
+.event-detail-date{margin:8px 0 18px;color:var(--secondary);font-size:15px;text-transform:lowercase}
+.event-detail-info{margin-bottom:28px;color:var(--text);font-size:17px;line-height:1.6}.event-detail-info>div{margin-bottom:12px}.event-detail-info>div:last-child{margin-bottom:0}
+.event-detail-section{margin:24px 0 16px}.event-detail-section-title{margin-bottom:16px;font-size:18px;font-weight:800}.event-detail-empty{display:none;padding:34px 0;color:var(--secondary);font-size:15px;text-align:center}
+.participants-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.participants-section-head .event-detail-section-title{margin:0;padding-top:2px}.event-guests-summary{display:flex;align-items:center;gap:10px;color:var(--text)}.event-guests-label{font-size:18px;font-weight:800;line-height:1.2;white-space:nowrap}.event-guests-label strong{font-size:18px;line-height:1;font-weight:800}.event-my-guests{border:0;padding:0;background:transparent;color:var(--text);font:inherit;font-size:18px;font-weight:800;line-height:1.2;white-space:nowrap;cursor:pointer}.event-my-guests strong{font-size:18px;font-weight:800}.event-my-guests:active,.event-guests-logo:active{transform:scale(.94)}.participants-content-row{display:flex;align-items:flex-start;gap:20px;min-height:96px}.participants-content-row>#detailAvatars{flex:1;min-width:0}.event-guests-card{width:72px;height:96px;flex:0 0 72px;display:flex;align-items:flex-start;justify-content:flex-start;color:var(--text)}.event-guests-logo{width:72px;height:72px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:0;padding:0;border-radius:50%;background:var(--event-soft,var(--lightgray));box-shadow:0 4px 12px rgba(0,0,0,.1);cursor:pointer}.event-guests-icon{width:100%;height:100%;display:block;fill:none;stroke:var(--event-accent,var(--accent));stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.guest-block{display:none!important}
+.event-detail-actions{justify-content:space-between;padding-left:clamp(20px,4vw,40px);padding-right:clamp(20px,4vw,40px);background:var(--card-solid);border-top:1px solid var(--gray);box-shadow:0 -12px 30px rgba(50,65,125,.06)}
+.event-detail-action,.event-detail-delete{border:0;background:transparent;padding:10px 8px;font-weight:800;cursor:pointer}.event-detail-action{color:var(--accent);font-size:17px}.event-detail-delete{display:none;color:var(--red);font-size:16px}.event-detail-action:active,.event-detail-delete:active{transform:scale(.97)}
+@media (max-width:560px){.event-detail-panel{max-height:90dvh;border-radius:28px 28px 0 0}.event-detail-actions{gap:12px}.event-detail-action,.event-detail-delete{font-size:15px}}*{box-sizing:border-box}html{background:var(--bg)}body{background:radial-gradient(circle at 8% -10%,rgba(103,93,246,.22),transparent 34%),radial-gradient(circle at 100% 10%,rgba(38,157,255,.16),transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;letter-spacing:-.01em;transition:background .35s ease,color .25s ease}button,input,textarea,select{font:inherit}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.event-card:focus-visible{outline:3px solid rgba(91,92,240,.35);outline-offset:3px}.container{max-width:760px;padding:24px clamp(18px,4vw,40px) calc(132px + env(safe-area-inset-bottom));padding-top:calc(24px + env(safe-area-inset-top))}.header{align-items:flex-start;gap:18px;margin-bottom:28px}.header-copy{min-width:0}.header-copy .eyebrow{display:block;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}.header h1{font-size:clamp(32px,7vw,48px);letter-spacing:-.06em;line-height:.98;margin:0}.header-copy p{color:var(--secondary);margin:12px 0 0;font-size:15px;line-height:1.45;max-width:390px}.header-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.admin-badge{background:linear-gradient(135deg,var(--green),#4cc7ff);padding:8px 12px;box-shadow:0 8px 20px rgba(24,168,120,.2)}.theme-toggle{width:42px;height:42px;border:1px solid var(--gray);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);transition:transform .2s}.theme-toggle:active{transform:scale(.92)}#eventsList{display:grid;gap:16px}.event-card{position:relative;display:grid;grid-template-columns:76px minmax(0,1fr);gap:18px;padding:16px;min-height:150px;margin:0;border:1px solid rgba(255,255,255,.45);border-radius:26px;background:var(--card);box-shadow:var(--shadow-soft);overflow:hidden;cursor:pointer;backdrop-filter:blur(22px);animation:eventAppear .45s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s,box-shadow .25s,border-color .25s}.event-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:rgba(91,92,240,.28)}.event-card:active{transform:scale(.985)}.event-date-block{display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:stretch;min-height:116px;border-radius:19px;background:linear-gradient(155deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 12px 24px rgba(91,92,240,.24);text-align:center}.event-date-block .day{font-size:31px;font-weight:850;line-height:1;letter-spacing:-.06em}.event-date-block .month{margin-top:5px;font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.12em;opacity:.88}.event-date-block .time{margin-top:11px;padding-top:8px;width:52px;border-top:1px solid rgba(255,255,255,.32);font-size:13px;font-weight:700}.event-copy{min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding:3px 2px 2px 0}.event-title{font-size:21px;line-height:1.16;letter-spacing:-.035em;margin:0;overflow-wrap:anywhere}.event-description{color:var(--secondary);font-size:14px;line-height:1.42;margin:8px 0 12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.meta-pill,.price{display:inline-flex;align-items:center;padding:7px 10px;border-radius:10px;font-size:12px;font-weight:800}.meta-pill{gap:5px;background:var(--lightgray);color:var(--secondary)}.price{background:rgba(91,92,240,.12);color:var(--accent)}.price.free{background:rgba(24,168,120,.13);color:var(--green)}.event-status{margin-left:auto;color:var(--green);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.empty{padding:82px 28px;border:1px dashed var(--gray);border-radius:26px;background:var(--card);box-shadow:var(--shadow-soft)}.empty::before{content:'✦';display:block;color:var(--accent);font-size:28px;margin-bottom:13px}.fab{right:max(20px,calc((100vw - 760px)/2 + 20px));bottom:calc(26px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 16px 32px rgba(91,92,240,.32)}.auth-shell{background:radial-gradient(circle at 15% 5%,rgba(91,92,240,.30),transparent 38%),radial-gradient(circle at 100% 100%,rgba(72,166,255,.18),transparent 34%),var(--bg);padding:20px}.auth-card{background:var(--card);border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);backdrop-filter:blur(26px)}.auth-brand{font-size:34px;background:linear-gradient(135deg,var(--text),var(--accent));color:transparent;background-clip:text;-webkit-background-clip:text}.auth-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2))}.datetime-modal,.picker-overlay{background:rgba(13,17,32,.52);backdrop-filter:blur(8px)}.datetime-panel,.picker-panel{background:var(--card-solid);box-shadow:var(--shadow)}.fixed-bottom{background:color-mix(in srgb,var(--card-solid) 88%,transparent);backdrop-filter:blur(22px);border-color:var(--gray)}.toast-stack{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:3000;display:grid;gap:8px;width:min(calc(100% - 32px),420px);transform:translateX(-50%);pointer-events:none}.toast{padding:13px 16px;border:1px solid rgba(255,255,255,.35);border-radius:16px;background:rgba(24,32,51,.92);color:#fff;box-shadow:var(--shadow);font-size:14px;font-weight:700;animation:toastIn .3s ease both}.skeleton-list{display:grid;gap:16px}.skeleton-card{height:150px;border-radius:26px;background:linear-gradient(90deg,var(--lightgray) 25%,rgba(255,255,255,.42) 50%,var(--lightgray) 75%);background-size:220% 100%;animation:shimmer 1.25s infinite}@keyframes eventAppear{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes toastIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes shimmer{to{background-position:-220% 0}}@media (min-width:640px){.event-card{grid-template-columns:92px minmax(0,1fr);padding:18px}.event-date-block{min-height:128px}.event-date-block .day{font-size:36px}}@media (max-width:460px){.header{margin-bottom:22px}.header-copy p{font-size:14px}.event-card{grid-template-columns:64px minmax(0,1fr);gap:13px;padding:13px;border-radius:22px}.event-date-block{min-height:118px;border-radius:16px}.event-date-block .day{font-size:27px}.event-title{font-size:18px}.event-status{width:100%;margin-left:0}}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}
+
+    
+/* Owner profile and settings */
+.owner-bar{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 22px;padding:12px 14px;border:1px solid rgba(255,255,255,.5);border-radius:22px;background:var(--card);box-shadow:var(--shadow-soft);backdrop-filter:blur(22px);text-align:left;cursor:pointer;color:var(--text);transition:transform .2s,box-shadow .2s}
+.owner-bar:active{transform:scale(.985)}
+.owner-avatar,.profile-avatar{display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:800}
+.owner-avatar{width:48px;height:48px;font-size:17px}.owner-avatar img,.profile-avatar img{width:100%;height:100%;object-fit:cover}.owner-info{min-width:0;flex:1}.owner-name{display:block;overflow:hidden;font-size:15px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}.owner-meta{display:flex;align-items:center;gap:7px;margin-top:4px;color:var(--secondary);font-size:12px}.owner-role{padding:3px 8px;border-radius:999px;background:rgba(91,92,240,.12);color:var(--accent);font-weight:700}.owner-arrow{color:var(--secondary);font-size:23px;line-height:1}
+.settings-screen{position:fixed;inset:0;z-index:1500;display:none;overflow:auto;background:var(--bg);padding:calc(18px + env(safe-area-inset-top)) max(18px,4vw) calc(30px + env(safe-area-inset-bottom));animation:settingsRise .28s ease both}.settings-screen.show{display:block}.settings-inner{width:min(100%,680px);margin:0 auto}.settings-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}.settings-back{width:42px;height:42px;border:1px solid var(--gray);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;font-size:24px}.settings-title{margin:0;font-size:28px;letter-spacing:-.04em}.profile-card{padding:22px;border:1px solid rgba(255,255,255,.45);border-radius:26px;background:var(--card);box-shadow:var(--shadow-soft);backdrop-filter:blur(20px)}.profile-hero{display:flex;align-items:center;gap:16px;margin-bottom:24px}.profile-avatar{width:76px;height:76px;font-size:24px}.profile-hero h3{margin:0 0 5px;font-size:20px}.profile-hero p{margin:0;color:var(--secondary);font-size:14px}.settings-section{margin-top:24px}.settings-section h4{margin:0 0 12px;color:var(--secondary);font-size:13px;letter-spacing:.08em;text-transform:uppercase}.settings-note{margin:8px 0 0;color:var(--secondary);font-size:12px;line-height:1.45}.settings-field{margin-bottom:14px}.settings-field label{display:block;margin-bottom:7px;color:var(--secondary);font-size:13px;font-weight:600}.settings-field input,.settings-field textarea{width:100%;border:1px solid transparent;border-radius:15px;padding:13px 14px;background:var(--lightgray);color:var(--text);outline:none}.settings-field textarea{min-height:100px;resize:vertical}.settings-field input[readonly]{opacity:.7}.settings-actions{display:flex;gap:10px;margin-top:22px}.settings-actions button{flex:1}.appearance-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray)}.appearance-row:last-child{border-bottom:0}.appearance-label strong{display:block;font-size:15px}.appearance-label span{display:block;margin-top:3px;color:var(--secondary);font-size:12px}.theme-choice{display:flex;gap:7px}.theme-choice button{border:1px solid var(--gray);border-radius:11px;padding:8px 10px;background:var(--lightgray);color:var(--text);cursor:pointer;font-size:12px}.theme-choice button.active{border-color:var(--accent);background:var(--accent);color:#fff}@keyframes settingsRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media (max-width:560px){.owner-bar{margin-bottom:18px}.settings-title{font-size:25px}.profile-card{padding:18px}.settings-actions{position:sticky;bottom:0;padding-top:12px;background:linear-gradient(transparent,var(--bg) 22%)} }
+
+    /* WeMeet-inspired editorial refresh: original VKOR implementation */
+:root{--bg:#f7f1e8;--card:#fffdf8;--card-solid:#fffdf8;--text:#171717;--secondary:#756e65;--accent:#ff5a36;--accent-2:#f4c84b;--green:#178b73;--gray:rgba(23,23,23,.12);--lightgray:rgba(23,23,23,.06);--shadow:0 20px 50px rgba(44,35,24,.12);--shadow-soft:0 10px 28px rgba(44,35,24,.09)}
+.dark{--bg:#171614;--card:rgba(38,35,30,.9);--card-solid:#26231e;--text:#fff9ef;--secondary:#b7aa99;--accent:#ff7451;--accent-2:#f3cd62;--green:#50c2a2;--gray:rgba(255,249,239,.16);--lightgray:rgba(255,249,239,.08);--shadow:0 24px 70px rgba(0,0,0,.35);--shadow-soft:0 12px 34px rgba(0,0,0,.27)}
+*{box-sizing:border-box}html{background:var(--bg)}body{background:radial-gradient(circle at 5% 0%,rgba(255,90,54,.15),transparent 28%),radial-gradient(circle at 100% 12%,rgba(244,200,75,.18),transparent 30%),var(--bg);color:var(--text);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.012em}.container{max-width:760px;padding:20px clamp(18px,4vw,40px) calc(132px + env(safe-area-inset-bottom));padding-top:calc(18px + env(safe-area-inset-top))}.owner-bar{border:1px solid var(--gray)!important;border-radius:999px!important;background:rgba(255,253,248,.78)!important;box-shadow:var(--shadow-soft)!important;backdrop-filter:blur(18px);padding:8px 14px!important}.dark .owner-bar{background:rgba(38,35,30,.82)!important}.owner-avatar{background:var(--accent)!important;color:#fff!important}.header{align-items:flex-start;gap:18px;margin:28px 0 30px}.header-copy .eyebrow{color:var(--accent);font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.header h1{font-size:clamp(40px,9vw,72px);line-height:.9;letter-spacing:-.075em;max-width:620px;margin:6px 0 0}.header-copy p{color:var(--secondary);font-size:16px;line-height:1.5;max-width:450px;margin-top:18px}.header:after{content:"GO OUT · MEET PEOPLE · MAKE PLANS";display:block;align-self:flex-end;writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--accent);opacity:.8;padding-bottom:4px}@media(max-width:560px){.header:after{display:none}}#eventsList{gap:18px}.event-card{grid-template-columns:86px minmax(0,1fr)!important;min-height:164px!important;border:1px solid rgba(23,23,23,.09)!important;border-radius:28px!important;background:var(--card)!important;box-shadow:var(--shadow-soft)!important}.event-card:before{background:linear-gradient(145deg,var(--accent),#ff9a61)!important;border-radius:20px!important}.event-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)!important}.event-date{color:var(--accent)!important;font-weight:900}.event-title{font-size:22px!important;letter-spacing:-.045em}.event-meta{color:var(--secondary)!important}.badge,.tag,.chip{border-radius:999px!important}.btn-primary,.auth-primary,.fab{background:var(--accent)!important;border-radius:999px!important;box-shadow:0 12px 24px rgba(255,90,54,.24)!important}.fab{width:62px!important;height:62px!important;font-size:30px!important}.datetime-panel,.auth-card,.profile-card{background:var(--card)!important;border:1px solid var(--gray)!important;border-radius:30px!important;box-shadow:var(--shadow)!important}.datetime-header{border-bottom:1px solid var(--gray)}.datetime-title,.settings-title{font-weight:900;letter-spacing:-.05em}.selector-chip,.theme-choice button{border-radius:999px!important}.auth-brand{font-size:42px!important;letter-spacing:-.08em;color:var(--accent)!important}.auth-subtitle{color:var(--secondary)!important}.auth-tab.active{color:var(--accent)!important;border-color:var(--accent)!important}.bottom-nav,.nav-bar{background:rgba(255,253,248,.84)!important;border:1px solid var(--gray)!important;box-shadow:var(--shadow-soft)!important;backdrop-filter:blur(20px);border-radius:24px!important}.dark .bottom-nav,.dark .nav-bar{background:rgba(38,35,30,.88)!important}
+/* Peekaboo-inspired mobile app UI refresh: playful, friendly, touch-first */
+:root{--bg:#fff8ef;--card:#ffffff;--card-solid:#ffffff;--text:#24304a;--secondary:#78829a;--accent:#ff6b57;--accent-2:#ffd166;--purple:#8d7cf6;--mint:#64d7bd;--blue:#78b9ff;--gray:rgba(36,48,74,.13);--lightgray:#f4f1ed;--shadow:0 14px 0 rgba(36,48,74,.08),0 18px 38px rgba(36,48,74,.10);--shadow-soft:0 8px 0 rgba(36,48,74,.06),0 12px 25px rgba(36,48,74,.08)}
+.dark{--bg:#1c2236;--card:#29324d;--card-solid:#29324d;--text:#fffaf1;--secondary:#b7c0d5;--accent:#ff806d;--accent-2:#f6d77b;--purple:#a999ff;--mint:#67d7bd;--blue:#83c4ff;--gray:rgba(255,250,241,.16);--lightgray:rgba(255,250,241,.08);--shadow:0 14px 0 rgba(0,0,0,.15),0 20px 42px rgba(0,0,0,.24);--shadow-soft:0 8px 0 rgba(0,0,0,.12),0 12px 28px rgba(0,0,0,.2)}
+*{box-sizing:border-box}html{background:var(--bg)}body{background:var(--bg);color:var(--text);font-family:"Trebuchet MS",ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:0;overflow-x:hidden}body:before,body:after{content:"";position:fixed;z-index:-1;border-radius:50%;pointer-events:none;filter:blur(1px);opacity:.55}body:before{width:170px;height:170px;right:-70px;top:110px;background:var(--accent-2)}body:after{width:210px;height:210px;left:-120px;bottom:70px;background:var(--mint)}button,input,textarea,select{font:inherit}.container{max-width:520px;padding:18px 18px calc(128px + env(safe-area-inset-bottom));padding-top:calc(16px + env(safe-area-inset-top))}.owner-bar{width:100%;border:0!important;border-radius:22px!important;background:var(--card)!important;box-shadow:var(--shadow-soft)!important;padding:12px 14px!important}.owner-avatar{width:42px!important;height:42px!important;border-radius:15px!important;background:var(--purple)!important;color:#fff!important;font-weight:900}.owner-name{font-weight:900!important}.owner-meta{color:var(--secondary)!important}.owner-arrow{width:30px;height:30px;border-radius:10px;background:var(--lightgray);display:grid;place-items:center;color:var(--accent)}.header{display:block;margin:28px 0 22px!important}.header-copy .eyebrow{display:inline-flex;color:var(--text);background:var(--accent-2);border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;letter-spacing:.03em;text-transform:none}.header h1{font-size:clamp(34px,10vw,52px)!important;line-height:1.02!important;letter-spacing:-.065em!important;margin:13px 0 0!important;max-width:440px}.header-copy p{color:var(--secondary);font-size:15px;line-height:1.45;margin:12px 0 0;max-width:430px}.header:after{content:"✦";display:block;position:absolute;right:30px;top:150px;color:var(--accent);font-size:42px;transform:rotate(12deg)}#eventsList{display:grid;gap:16px}.event-card{grid-template-columns:72px minmax(0,1fr)!important;gap:14px!important;min-height:146px!important;padding:14px!important;border:0!important;border-radius:26px!important;background:var(--card)!important;box-shadow:var(--shadow-soft)!important;transition:transform .18s ease,box-shadow .18s ease!important}.event-card:nth-child(3n+1){border-radius:30px 22px 30px 22px!important}.event-card:nth-child(3n+2){background:linear-gradient(135deg,var(--card),rgba(255,209,102,.23))!important}.event-card:nth-child(3n){background:linear-gradient(135deg,var(--card),rgba(100,215,189,.20))!important}.event-card:before{background:var(--accent)!important;border-radius:19px!important;box-shadow:inset 0 -8px 0 rgba(0,0,0,.07)}.event-card:active{transform:scale(.97)!important}.event-date{font-size:12px!important;color:var(--text)!important;font-weight:900!important}.event-title{font-size:20px!important;line-height:1.04!important;letter-spacing:-.04em!important}.event-meta{font-size:13px!important;color:var(--secondary)!important}.badge,.tag,.chip,.selector-chip{border-radius:999px!important}.badge{background:var(--mint)!important;color:var(--text)!important;font-weight:900}.btn-primary,.auth-primary{min-height:52px!important;border:0!important;background:var(--accent)!important;color:#fff!important;border-radius:18px!important;box-shadow:0 6px 0 #d84d3e,0 12px 22px rgba(255,107,87,.22)!important;font-weight:900!important}.btn-primary:active,.auth-primary:active{transform:translateY(4px)!important;box-shadow:0 2px 0 #d84d3e!important}.fab{width:58px!important;height:58px!important;right:20px!important;bottom:78px!important;border:0!important;border-radius:20px!important;background:var(--purple)!important;box-shadow:0 6px 0 #6556ca,0 14px 24px rgba(141,124,246,.28)!important}.fab:active{transform:translateY(4px) scale(.96)!important}.auth-shell{background:var(--bg)!important}.auth-card{border:0!important;border-radius:34px!important;background:var(--card)!important;box-shadow:var(--shadow)!important;padding:26px!important}.auth-brand{font-size:42px!important;letter-spacing:-.08em;color:var(--accent)!important}.auth-subtitle{color:var(--secondary)!important;line-height:1.45}.auth-tabs{background:var(--lightgray)!important;border-radius:16px!important;padding:4px!important}.auth-tab{border-radius:12px!important}.auth-tab.active{background:var(--card)!important;color:var(--accent)!important;box-shadow:0 3px 0 rgba(36,48,74,.08)}.auth-form input,.auth-form textarea,.settings-field input,.settings-field textarea,.settings-field select{min-height:50px!important;border:2px solid transparent!important;border-radius:16px!important;background:var(--lightgray)!important;color:var(--text)!important}.auth-form input:focus,.settings-field input:focus,.settings-field textarea:focus{border-color:var(--blue)!important}.auth-telegram{min-height:50px!important;border:2px solid var(--purple)!important;border-radius:16px!important;background:transparent!important;color:var(--purple)!important;font-weight:900}.datetime-panel,.profile-card{border:0!important;border-radius:30px 30px 0 0!important;background:var(--card)!important;box-shadow:var(--shadow)!important}.datetime-header{padding:16px 18px!important;border-bottom:1px solid var(--gray)!important}.datetime-btn{border-radius:12px!important;color:var(--accent)!important;font-weight:900}.datetime-title,.settings-title{font-weight:900!important;letter-spacing:-.05em!important}.selector-chip{background:var(--lightgray)!important;padding:12px 16px!important;font-weight:900!important}.date-chip{background:var(--accent-2)!important;color:var(--text)!important}.time-chip{background:var(--mint)!important;color:var(--text)!important}.bottom-nav,.nav-bar{border:0!important;border-radius:24px!important;background:var(--card)!important;box-shadow:var(--shadow-soft)!important}.toast{border-radius:16px!important;background:var(--text)!important;color:var(--bg)!important;font-weight:800}.skeleton-card{border-radius:25px!important;background:linear-gradient(90deg,var(--lightgray),var(--card),var(--lightgray))!important}
+
+/* Event Pulse 2026 — bright editorial event discovery layer */
+:root{--pulse-ink:#20243a;--pulse-muted:#7b8198;--pulse-coral:#ff6b57;--pulse-yellow:#ffd166;--pulse-mint:#67d7bd;--pulse-lilac:#9b8cff;--pulse-paper:#fffaf2}
+.pulse-hero{position:relative;overflow:hidden;margin:0 0 22px;padding:22px 20px 20px;border-radius:30px;background:linear-gradient(135deg,#20243a 0%,#34355c 55%,#ff8068 150%);color:#fff;box-shadow:0 18px 0 rgba(32,36,58,.08),0 24px 48px rgba(32,36,58,.22)}
+.pulse-hero:after{content:'✦';position:absolute;right:20px;top:8px;color:var(--pulse-yellow);font-size:70px;opacity:.75;transform:rotate(15deg)}
+.pulse-hero-kicker{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--pulse-yellow)}
+.pulse-hero h2{max-width:270px;margin:8px 0 6px;font-size:29px;line-height:1;letter-spacing:-.06em}.pulse-hero p{max-width:300px;margin:0;color:rgba(255,255,255,.74);font-size:14px;line-height:1.4}
+.pulse-tools{display:flex;gap:9px;overflow-x:auto;margin:0 -2px 18px;padding:2px;scrollbar-width:none}.pulse-tools::-webkit-scrollbar{display:none}
+.pulse-chip{flex:0 0 auto;border:1px solid rgba(32,36,58,.12);border-radius:999px;padding:10px 14px;background:var(--card);color:var(--secondary);font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 5px 0 rgba(32,36,58,.05)}.pulse-chip.active{background:var(--pulse-ink);color:#fff;border-color:var(--pulse-ink)}
+.pulse-search{width:100%;margin:0 0 12px;padding:13px 16px;border:1px solid rgba(32,36,58,.1);border-radius:17px;background:var(--card);color:var(--text);outline:0;box-shadow:0 8px 22px rgba(32,36,58,.06)}.pulse-search:focus{border-color:var(--pulse-coral);box-shadow:0 0 0 4px rgba(255,107,87,.16)}
+.pulse-card-tools{display:flex;gap:7px;margin-top:12px}.pulse-card-tool{border:0;border-radius:12px;padding:7px 10px;background:var(--lightgray);color:var(--secondary);font-size:12px;font-weight:900;cursor:pointer}.pulse-card-tool.is-liked{background:#ffe1d8;color:#e84e43}.pulse-card-tool:active{transform:scale(.95)}
+.pulse-media{display:flex;align-items:flex-end;min-height:72px;margin:-2px -2px 12px;padding:12px;border-radius:20px;background:linear-gradient(135deg,#ffd166,#ff806d 48%,#9b8cff);color:#fff;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.pulse-media span{background:rgba(32,36,58,.72);border-radius:999px;padding:6px 9px}
+.pulse-bottom-nav{position:fixed;z-index:1100;left:50%;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:4px;width:min(92vw,440px);transform:translateX(-50%);padding:7px;border:1px solid rgba(255,255,255,.55);border-radius:23px;background:rgba(255,255,255,.78);box-shadow:0 16px 38px rgba(32,36,58,.2);backdrop-filter:blur(18px)}.dark .pulse-bottom-nav{background:rgba(38,35,30,.84);border-color:rgba(255,255,255,.14)}.pulse-bottom-nav button{flex:1;border:0;border-radius:16px;padding:9px 6px;background:transparent;color:var(--secondary);font-size:11px;font-weight:900;cursor:pointer}.pulse-bottom-nav button.active{background:var(--pulse-ink);color:#fff}.pulse-bottom-nav .pulse-nav-icon{display:block;margin-bottom:2px;font-size:18px}
+.pulse-toast{position:fixed;z-index:3000;left:50%;bottom:94px;transform:translateX(-50%) translateY(12px);padding:11px 15px;border-radius:999px;background:var(--pulse-ink);color:#fff;font-size:13px;font-weight:800;opacity:0;pointer-events:none;transition:.25s}.pulse-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:560px){.pulse-hero{margin-left:-2px;margin-right:-2px}.pulse-bottom-nav{bottom:max(8px,env(safe-area-inset-bottom))}}
+
+/* Unified modal system: every sheet owns its controls and never sits under navigation. */
+.datetime-modal,.picker-overlay,.settings-screen{z-index:2200!important}
+.datetime-modal.show,.picker-overlay.show{display:flex!important}
+.datetime-panel,.picker-panel{position:relative;z-index:2201!important;width:min(100%,760px);max-height:min(92dvh,820px);border:1px solid rgba(255,255,255,.7);border-radius:30px 30px 0 0;background:var(--card-solid,var(--card));box-shadow:0 -18px 60px rgba(32,36,58,.22);overflow:hidden}
+.datetime-panel:before,.picker-panel:before{content:'';display:block;width:42px;height:5px;margin:10px auto 0;border-radius:999px;background:var(--secondary);opacity:.35}
+.datetime-header{position:relative;z-index:2;min-height:70px;padding:15px 20px 12px;border-bottom:1px solid var(--gray);background:var(--card-solid,var(--card))}.datetime-title{font-size:22px;font-weight:950;letter-spacing:-.04em}.datetime-btn{font-weight:900}.datetime-btn:first-child{color:var(--pulse-coral,#ff6b57)}
+.modal-content{padding:18px 20px calc(120px + env(safe-area-inset-bottom));overscroll-behavior:contain}.selector-row{gap:12px;margin:2px 0 22px}.selector-chip{min-height:56px;display:grid;place-items:center;border:0!important;border-radius:20px!important;font-weight:950;box-shadow:0 9px 20px rgba(32,36,58,.1)}.date-chip{background:#ffd166!important;color:#20243a!important}.time-chip{background:#67d7bd!important;color:#20243a!important}
+.form-group{margin:18px 0}.form-group label{font-size:13px;font-weight:900;letter-spacing:.01em}.form-group input,.form-group textarea,.form-group select{min-height:56px;border:1px solid transparent!important;border-radius:18px!important;background:var(--lightgray)!important;color:var(--text)!important;font-weight:650}.form-group textarea{min-height:100px}.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--pulse-coral,#ff6b57)!important;box-shadow:0 0 0 4px rgba(255,107,87,.14);outline:0}
+.fixed-bottom{position:absolute!important;z-index:2210!important;left:0;right:0;bottom:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--gray);background:linear-gradient(180deg,transparent,var(--card-solid,var(--card)) 22%);backdrop-filter:blur(18px)}.fixed-bottom .btn-primary{min-height:56px;border-radius:18px;background:linear-gradient(135deg,#20243a,#50517e);box-shadow:0 10px 22px rgba(32,36,58,.22)}
+.event-detail-modal{z-index:2250!important}.event-detail-panel{max-height:min(92dvh,820px)!important}.event-detail-content{padding-bottom:120px!important}.event-detail-actions{position:absolute!important;z-index:2260!important}.event-detail-action{min-height:52px;border-radius:17px!important;background:var(--pulse-coral,#ff6b57)!important;color:#fff!important;padding:0 18px!important}.event-detail-delete{border-radius:17px!important;background:var(--lightgray)!important}
+.picker-overlay{z-index:2350!important;background:rgba(22,26,45,.5)!important}.picker-panel{padding:0 20px 22px;max-width:560px}.picker-panel>div:first-child{padding-top:14px!important}.calendar-grid{gap:7px;margin-top:14px}.calendar-day{min-height:44px;display:grid;place-items:center;padding:8px 0;border-radius:14px;font-weight:750}.calendar-day.today,.calendar-day.selected{background:var(--pulse-coral,#ff6b57)!important}.time-grid{grid-template-columns:repeat(3,1fr);gap:10px;padding-bottom:6px}.time-btn{border-radius:15px;padding:14px;background:var(--lightgray);font-weight:850}.time-btn.selected{background:var(--pulse-mint,#67d7bd);color:#20243a}
+.settings-screen{z-index:2400!important;padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}.settings-inner{width:min(100%,620px);margin:0 auto}.settings-header{position:sticky;top:0;z-index:2;padding:10px 0 16px;background:var(--bg)}.profile-card{border-radius:28px!important;box-shadow:var(--shadow)!important;padding:20px!important}.settings-actions{position:sticky;bottom:0;padding-top:16px;background:linear-gradient(180deg,transparent,var(--bg) 24%)}
+.pulse-bottom-nav{z-index:1100;transition:opacity .18s,transform .18s,visibility .18s}.pulse-modal-open .pulse-bottom-nav{opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,16px)}body.pulse-modal-open{overflow:hidden}.pulse-modal-open .auth-logout{z-index:1000}
+.pulse-card-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%;min-width:0}.pulse-card-tool{min-width:0;width:100%;height:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px;line-height:42px}.pulse-card-tool.is-liked{color:#e84e43}
+.event-detail-action.is-full,.event-detail-action:disabled{opacity:.55!important;background:var(--secondary)!important;cursor:not-allowed!important}
+
+.social-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.social-action{border:0;border-radius:14px;padding:12px 10px;background:var(--lightgray);color:var(--text);font:600 14px inherit;cursor:pointer}
+.social-action.primary{background:var(--accent);color:#fff}
+.social-action:active{transform:scale(.98)}
+.social-signal{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.social-signal span{padding:7px 10px;border-radius:999px;background:var(--lightgray);font-size:12px;color:var(--secondary)}
+.social-signal span strong{color:var(--text)}
+.social-invite-note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(48,184,0,.12);color:var(--text);font-size:13px;line-height:1.4}
+.social-stats{margin-top:14px;padding:14px;border-radius:16px;background:var(--lightgray);border:1px solid rgba(128,128,128,.12)}.social-stats-title{font-weight:700;margin-bottom:10px}.social-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.social-stat{padding:9px 6px;border-radius:12px;background:var(--card);text-align:center}.social-stat strong{display:block;font-size:20px}.social-stat span{font-size:11px;color:var(--secondary)}.social-stats-refresh{margin-top:10px;border:0;background:transparent;color:var(--accent);font:600 12px inherit;cursor:pointer;padding:0}</style>
+<style>
+.hidden{display:none!important}
+.organizer-dashboard{display:none;margin:0 0 24px;padding:20px;border-radius:26px;background:var(--card);box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.organizer-dashboard.show{display:block}.organizer-dashboard-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.organizer-dashboard-title{font-size:24px;font-weight:800;letter-spacing:-.04em}.organizer-dashboard-close{border:0;background:var(--lightgray);color:var(--text);border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer}.organizer-dashboard-loading{color:var(--secondary);padding:22px 0;text-align:center}.organizer-dashboard-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}.organizer-dashboard-total{padding:12px 7px;border-radius:15px;background:var(--lightgray);text-align:center}.organizer-dashboard-total strong{display:block;font-size:22px}.organizer-dashboard-total span{font-size:11px;color:var(--secondary)}.organizer-dashboard-list{display:grid;gap:10px}.organizer-event-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px;border:1px solid rgba(128,128,128,.16);border-radius:16px}.organizer-event-name{font-weight:700;line-height:1.2}.organizer-event-date{font-size:12px;color:var(--secondary);margin-top:4px}.organizer-event-metrics{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}.organizer-event-metric{padding:6px 8px;border-radius:999px;background:var(--lightgray);font-size:11px;color:var(--secondary)}.organizer-event-open{margin-top:8px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:0}.organizer-dashboard-button{margin:0 0 18px;width:100%;border:0;border-radius:16px;padding:13px;background:var(--text);color:var(--bg);font-weight:800;cursor:pointer}.dark .organizer-dashboard-button{background:#fff;color:#111}.organizer-dashboard-empty{padding:16px 0;color:var(--secondary);text-align:center}@media(max-width:560px){.organizer-dashboard-summary{grid-template-columns:repeat(2,1fr)}.organizer-event-row{grid-template-columns:1fr}.organizer-event-metrics{justify-content:flex-start}}
+</style><style>.organizer-dashboard-button{position:fixed;right:20px;bottom:108px;z-index:101;border:0;border-radius:18px;padding:12px 16px;background:var(--text);color:var(--bg);font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.2);cursor:pointer}.organizer-dashboard-button.hidden{display:none!important}.dark .organizer-dashboard-button{background:#fff;color:#111}</style><style>
+.organizer-dashboard{position:fixed!important;inset:0!important;z-index:2500!important;display:none!important;overflow:auto!important;margin:0!important;padding:calc(14px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))!important;border-radius:0!important;background:var(--bg)!important;box-shadow:none!important}
+.organizer-dashboard.show{display:block!important}.organizer-dashboard .organizer-dashboard-head{position:sticky;top:0;z-index:2;padding:8px 0 16px;background:var(--bg)}
+.organizer-dashboard-button{display:none!important}.organizer-dashboard-nav.hidden{display:none!important}.pulse-bottom-nav button.hidden{display:none!important}
+</style><style>
+.event-detail-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px max(16px,4vw) calc(12px + env(safe-area-inset-bottom))!important;overflow:visible!important}
+.event-detail-actions>*{min-width:0!important;width:100%!important;margin:0!important;border-radius:16px!important;min-height:54px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.15!important}
+.event-detail-action,.event-detail-delete{font-size:14px!important;padding:8px 5px!important}.social-actions{display:contents!important}.social-action{min-width:0!important;width:100%!important;border-radius:16px!important;padding:8px 5px!important;font-weight:800!important;font-size:13px!important;line-height:1.15!important}.social-action.primary{background:var(--accent)!important;color:#fff!important}
+.social-stats{order:99;margin:22px 0 0!important;padding:12px 0 2px!important;border:0!important;border-top:1px solid var(--gray)!important;border-radius:0!important;background:transparent!important}.social-stats-title{display:none!important}.social-stats-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important}.social-stat{min-width:0!important;padding:8px 3px!important;border-radius:13px!important;background:var(--lightgray)!important;text-align:center!important}.social-stat strong{display:block!important;font-size:18px!important;line-height:1.15!important}.social-stat span{display:block!important;font-size:18px!important;line-height:1.15!important}.social-stat .social-stat-label{display:none!important}.social-stats-refresh{display:block!important;margin:9px auto 0!important;padding:4px 8px!important;border:0!important;background:transparent!important;color:var(--secondary)!important;font-size:18px!important;line-height:1!important}.social-stat[title]{cursor:help}@media(max-width:560px){.event-detail-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important;padding-left:12px!important;padding-right:12px!important}.event-detail-actions>*{min-height:58px!important}.social-stat strong{font-size:17px!important}.social-stat span{font-size:17px!important}}
+</style><style>
+.participant-profile-modal{position:fixed;inset:0;z-index:2800;display:none;align-items:flex-end;justify-content:center;background:rgba(22,26,43,.48);backdrop-filter:blur(10px);padding:18px}.participant-profile-modal.show{display:flex;animation:participantBackdropIn .24s ease both}.participant-profile-card{position:relative;width:min(100%,520px);max-height:84vh;overflow:auto;border:1px solid rgba(255,255,255,.7);border-radius:30px 30px 0 0;background:var(--card-solid,var(--card));color:var(--text);padding:0 22px 24px;box-shadow:0 -18px 60px rgba(32,36,58,.25);animation:participantSheetIn .28s ease both}.participant-profile-card:before{content:'';display:block;width:42px;height:5px;margin:10px auto 16px;border-radius:999px;background:var(--secondary);opacity:.32}.participant-profile-head{position:relative;display:flex;align-items:center;gap:14px;margin:0 -22px;padding:24px 22px 22px;min-height:152px;overflow:hidden;color:#fff;background:radial-gradient(circle at 92% 6%,rgba(255,255,255,.24),transparent 28%),linear-gradient(135deg,#20243a,#178b73)}.participant-profile-head:after{content:'✦';position:absolute;right:14px;bottom:-28px;color:rgba(255,255,255,.14);font-size:120px;line-height:1;transform:rotate(14deg)}.participant-profile-avatar{position:relative;z-index:2;width:76px;height:76px;flex:0 0 76px;border:4px solid rgba(255,255,255,.85);border-radius:24px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6b57,#9b8cff);color:#fff;font-size:25px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.22)}.participant-profile-avatar img{width:100%;height:100%;object-fit:cover}.participant-profile-name{position:relative;z-index:2;max-width:230px;font-size:24px;line-height:1.04;font-weight:950;letter-spacing:-.045em}.participant-profile-sub{position:relative;z-index:2;color:rgba(255,255,255,.74);font-size:13px;margin-top:7px}.participant-profile-close{position:relative;z-index:3;margin-left:auto;align-self:flex-start;border:0;border-radius:999px;padding:10px 13px;background:rgba(255,255,255,.18);color:#fff;font-weight:800;cursor:pointer}.participant-profile-close:active{transform:scale(.96)}.participant-profile-stats{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:22px 0 0}.participant-profile-stat{min-height:84px;padding:13px 7px;border:1px solid var(--gray);border-radius:18px;background:var(--lightgray);text-align:center;transition:transform .2s,background .2s}.participant-profile-stat:hover{transform:translateY(-2px);background:var(--card)}.participant-profile-stat strong{display:block;color:var(--text);font-size:21px;line-height:1.15;font-weight:950}.participant-profile-stat span{display:block;color:var(--secondary);font-size:11px;line-height:1.2;margin-top:7px}.participant-profile-card::-webkit-scrollbar{width:6px}.participant-profile-card::-webkit-scrollbar-thumb{border-radius:99px;background:var(--gray)}@keyframes participantSheetIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes participantBackdropIn{from{opacity:0}to{opacity:1}}@media(max-width:420px){.participant-profile-modal{padding:0}.participant-profile-card{width:100%;max-height:88vh;border-radius:28px 28px 0 0;padding-left:16px;padding-right:16px}.participant-profile-head{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;min-height:145px}.participant-profile-name{font-size:22px;max-width:170px}.participant-profile-avatar{width:68px;height:68px;flex-basis:68px}.participant-profile-stats{grid-template-columns:repeat(2,1fr);gap:8px;margin-top:18px}.participant-profile-stat{min-height:82px}}
+</style><style>
+.event-detail-panel{--event-accent:#ff6b57;--event-deep:#20243a;--event-soft:#fff1ec;background:var(--card-solid,var(--card))!important;overflow:hidden!important}.event-detail-panel.event-theme-night{--event-accent:#ff7451;--event-deep:#27234d;--event-soft:#f1edff}.event-detail-panel.event-theme-mint{--event-accent:#178b73;--event-deep:#153e43;--event-soft:#e8f8f0}.event-detail-panel.event-theme-sun{--event-accent:#d68a00;--event-deep:#4c3512;--event-soft:#fff5d8}.event-detail-panel.event-theme-ocean{--event-accent:#2678c9;--event-deep:#15365f;--event-soft:#e9f3ff}.event-detail-header{position:relative;min-height:168px;padding:24px 22px 22px;color:#fff;background:radial-gradient(circle at 90% 5%,rgba(255,255,255,.24),transparent 28%),linear-gradient(135deg,var(--event-deep),var(--event-accent));overflow:hidden}.event-detail-header:after{content:'✦';position:absolute;right:18px;bottom:-16px;font-size:118px;line-height:1;color:rgba(255,255,255,.14);transform:rotate(12deg)}.event-detail-header .datetime-btn{position:relative;z-index:2;color:#fff!important;padding:0}.event-detail-header .datetime-title{position:relative;z-index:2;margin-top:26px;max-width:82%;font-size:clamp(28px,7vw,42px);line-height:.98;letter-spacing:-.07em;font-weight:950}.event-detail-kicker{position:relative;z-index:2;margin-top:8px;color:rgba(255,255,255,.76);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.event-detail-content{padding:0 0 132px!important}.event-detail-body{padding:0 clamp(20px,4vw,40px)!important}.event-date-card{display:flex;align-items:center;gap:14px;margin:18px 0 22px;padding:14px 16px;border-radius:20px;background:var(--event-soft);border:1px solid color-mix(in srgb,var(--event-accent) 22%,transparent)}.event-date-day{min-width:54px;color:var(--event-accent);font-size:28px;font-weight:950;line-height:.9;text-align:center}.event-date-day small{display:block;margin-top:5px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.event-date-copy{color:var(--text);font-size:15px;font-weight:800;line-height:1.35}.event-date-copy span{display:block;color:var(--secondary);font-size:13px;font-weight:600;margin-top:3px}.event-description-block{margin:0 0 22px}.event-section-label{margin-bottom:8px;color:var(--secondary);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.event-description-text{color:var(--text);font-size:18px;line-height:1.5;letter-spacing:-.02em}.event-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 24px}.event-fact{padding:13px 14px;border-radius:17px;background:var(--lightgray);border:1px solid var(--gray)}.event-fact strong{display:block;color:var(--text);font-size:17px}.event-fact span{display:block;margin-top:4px;color:var(--secondary);font-size:11px}.event-theme-editor{display:none;margin:-8px 0 20px;padding:14px;border-radius:18px;background:var(--lightgray);border:1px solid var(--gray)}.event-theme-editor.show{display:block}.event-theme-options{display:flex;gap:8px;flex-wrap:wrap}.event-theme-option{width:32px;height:32px;border:3px solid transparent;border-radius:50%;cursor:pointer}.event-theme-option.active{border-color:var(--text);box-shadow:0 0 0 2px var(--card)}.event-theme-toggle{position:absolute;right:20px;top:22px;z-index:3;border:0;border-radius:999px;padding:8px 11px;background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer}.event-detail-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;padding:12px max(16px,4vw) calc(12px + env(safe-area-inset-bottom))!important}.event-detail-actions .event-detail-action{grid-column:span 1!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions .event-detail-menu{display:flex!important;align-items:center;justify-content:center;border:0;border-radius:16px;background:var(--lightgray);color:var(--secondary);font-weight:900;font-size:13px;cursor:pointer}.event-detail-actions .social-action{min-height:58px!important}.event-detail-actions .event-detail-action{min-height:58px!important}@media(max-width:420px){.event-detail-header{min-height:154px}.event-fact-grid{gap:7px}.event-fact{padding:11px 10px}.event-detail-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important;padding-left:10px!important;padding-right:10px!important}}
+</style><style>
+/* Final event action bar: four actions stay in one balanced row. */
+.event-detail-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important;padding:12px max(12px,3vw) calc(12px + env(safe-area-inset-bottom))!important;background:var(--card-solid,var(--card))!important;border-top:1px solid var(--gray)!important;box-shadow:0 -12px 30px rgba(32,36,58,.08)!important;overflow:visible!important}
+.event-detail-actions>*{grid-column:auto!important;min-width:0!important;width:100%!important;height:58px!important;min-height:58px!important;margin:0!important;border:0!important;border-radius:18px!important;padding:7px 4px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.08!important;font-size:12px!important;font-weight:900!important;box-sizing:border-box!important}
+.event-detail-actions .social-action{background:var(--lightgray)!important;color:var(--text)!important;box-shadow:none!important}.event-detail-actions .social-action.primary{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions .event-detail-action{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions .event-detail-menu{background:var(--lightgray)!important;color:var(--secondary)!important;box-shadow:none!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions>*:active{transform:scale(.96)!important}.event-detail-actions small{font-size:11px!important;font-weight:900!important}
+@media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:8px!important;padding-right:8px!important}.event-detail-actions>*{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important;padding-left:2px!important;padding-right:2px!important}.event-detail-actions small{font-size:10px!important}}
+</style><style>
+/* Stable action layout: social-actions is a real flex item, never display:contents. */
+.event-detail-actions{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;align-items:stretch!important;padding:12px max(10px,2.6vw) calc(12px + env(safe-area-inset-bottom))!important;background:var(--card-solid,var(--card))!important;border-top:1px solid var(--gray)!important;box-shadow:0 -12px 30px rgba(32,36,58,.08)!important;overflow:visible!important}
+.event-detail-actions .social-actions{display:flex!important;flex:2 1 0!important;min-width:0!important;width:auto!important;gap:8px!important;margin:0!important;padding:0!important;align-items:stretch!important}
+.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{flex:1 1 0!important;min-width:0!important;width:auto!important;height:58px!important;min-height:58px!important;margin:0!important;border:0!important;border-radius:18px!important;padding:6px 3px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.05!important;font-size:11px!important;font-weight:900!important;box-sizing:border-box!important}
+.event-detail-actions .social-action{background:var(--lightgray)!important;color:var(--text)!important;box-shadow:none!important}.event-detail-actions .social-action.primary,.event-detail-actions>.event-detail-action{background:var(--event-accent,var(--accent))!important;color:#fff!important;box-shadow:0 8px 18px color-mix(in srgb,var(--event-accent,var(--accent)) 28%,transparent)!important}.event-detail-actions>.event-detail-menu{background:var(--lightgray)!important;color:var(--secondary)!important;box-shadow:none!important}.event-detail-actions .event-detail-delete{display:none!important}.event-detail-actions>*:active{transform:scale(.96)!important}.event-detail-actions small{display:block!important;font-size:10px!important;font-weight:900!important}
+/* Social guest stepper: one clear decision, one compact control. */
+.guest-block{margin:26px 0 30px!important;padding:16px 14px 14px!important;border:1px solid var(--gray)!important;border-radius:22px!important;background:var(--event-soft,var(--lightgray))!important}.guest-hint{margin:0 0 14px!important;color:var(--text)!important;font-size:13px!important;font-weight:800!important;text-align:left!important}.guest-hint:before{content:'👥  ';color:var(--event-accent,var(--accent))}.guest-controls{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}.guest-control{width:48px!important;height:48px!important;flex:0 0 48px!important;border:1px solid color-mix(in srgb,var(--event-accent,var(--accent)) 22%,var(--gray))!important;border-radius:16px!important;background:var(--card)!important;color:var(--event-accent,var(--accent))!important;font-size:25px!important;font-weight:700!important;box-shadow:0 6px 14px rgba(32,36,58,.08)!important}.guest-count{position:relative!important;min-width:82px!important;color:var(--text)!important;font-size:30px!important;font-weight:950!important;line-height:1!important;text-align:center!important}.guest-count:after{content:'гостей';display:block;margin-top:5px;color:var(--secondary);font-size:11px;font-weight:700;letter-spacing:.02em}.guest-controls:after{content:'Вы + гости';display:block;position:absolute;opacity:0;width:0;height:0}
+@media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:7px!important;padding-right:7px!important}.event-detail-actions .social-actions{gap:5px!important}.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important}.event-detail-actions small{font-size:9px!important}.guest-block{margin-left:0!important;margin-right:0!important}.guest-control{width:44px!important;height:44px!important;flex-basis:44px!important}.guest-count{font-size:28px!important}}
+</style></head>
+<body>
+<div id="authShell" class="auth-shell hidden">
+  <section class="auth-card" aria-labelledby="authTitle">
+    <div class="auth-brand" id="authTitle">VKOR запись</div>
+    <p class="auth-subtitle">Записывайтесь на события быстро и удобно — через Telegram или обычный логин.</p>
+    <div class="auth-tabs"><button class="auth-tab active" data-auth-mode="login" type="button">Войти</button><button class="auth-tab" data-auth-mode="register" type="button">Регистрация</button></div>
+    <form id="authForm" class="auth-form"><input id="authLogin" autocomplete="username" placeholder="Логин" minlength="3" required><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль" minlength="8" required><input id="authFirstName" class="register-only" autocomplete="given-name" placeholder="Имя"><input id="authLastName" class="register-only" autocomplete="family-name" placeholder="Фамилия"><div id="authError" class="auth-error" role="alert"></div><button id="authSubmit" class="auth-primary" type="submit">Войти</button></form>
+    <div class="auth-divider">или</div><button id="telegramLogin" class="auth-telegram" type="button">Продолжить через Telegram</button>
+  </section>
+</div><button id="authLogout" class="auth-logout" type="button">Выйти</button>
+
+<div id="toastStack" class="toast-stack" aria-live="polite"></div>
+<div class="container">
+
+    <button id="ownerBar" class="owner-bar" type="button" onclick="openSettings()" aria-label="Открыть настройки профиля">
+        <span id="ownerAvatar" class="owner-avatar">?</span>
+        <span class="owner-info"><span id="ownerName" class="owner-name">Профиль пользователя</span><span class="owner-meta"><span id="ownerUsername">Telegram-профиль</span></span></span>
+        <span class="owner-arrow">›</span>
+    </button>
+
+    <div class="header">
+        <div class="header-copy"><span class="eyebrow">VKOR · расписание</span><h1>Найдите своё событие</h1><p>Записывайтесь на встречи, управляйте участием и создавайте новые события в одном месте.</p></div>
+        <div class="header-actions"></div>
+    </div>
+    <div id="eventsList">
+        <div class="empty"><h3>Загрузка...</h3></div>
+    </div>
+    <button id="fab" class="fab hidden">+</button>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ -->
+<div id="createEventModal" class="datetime-modal">
+    <div class="datetime-panel">
+        <div class="datetime-header">
+            <button class="datetime-btn" onclick="closeCreateModal()">Отмена</button>
+            <div class="datetime-title">Новое событие</div>
+            <div></div>
+        </div>
+        <div class="modal-content">
+            <div class="selector-row">
+                <div id="dateChip" class="selector-chip date-chip" onclick="openDatePicker()">Сегодня</div>
+                <div id="timeChip" class="selector-chip time-chip" onclick="openTimePicker()">18:00</div>
+            </div>
+            <div class="form-group">
+                <input type="text" id="eventTitleInput" placeholder="Название события" oninput="checkReady()" />
+            </div>
+            <div class="form-group">
+                <textarea id="eventDescInput" placeholder="Описание (необязательно)"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Максимум участников (0 = без лимита)</label>
+                <input type="number" id="eventMaxInput" min="0" placeholder="Например: 25" />
+            </div>
+            <div class="form-group">
+                <label>Модератор</label>
+                <select id="eventModeratorInput"><option value="">Загрузка...</option></select>
+            </div>
+            <div class="form-group">
+                <label>Стоимость (₽, 0 = бесплатно)</label>
+                <input type="number" id="eventPriceInput" min="0" value="0" />
+            </div>
+            <div class="create-form-bottom-padding"></div>
+        </div>
+        <div class="fixed-bottom">
+            <button id="saveBtn" class="btn-primary" onclick="saveNewEvent()" disabled>Готово</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА СОБЫТИЯ -->
+<div id="eventDetailModal" class="datetime-modal event-detail-modal"><div class="datetime-panel event-detail-panel"><div class="event-detail-header"><button class="datetime-btn" onclick="closeEventDetail()">Закрыть</button><button id="eventThemeToggle" class="event-theme-toggle" type="button" onclick="toggleEventThemeEditor()" aria-label="Оформление">⋯</button><div class="datetime-title" id="detailTitle">Событие</div><div id="detailKicker" class="event-detail-kicker">Событие · VKOR</div></div><div class="modal-content event-detail-content"><div class="event-detail-body"><div id="eventThemeEditor" class="event-theme-editor"><div class="event-section-label">Оформление события</div><div class="event-theme-options"><button class="event-theme-option" data-theme="coral" style="background:linear-gradient(135deg,#20243a,#ff6b57)" onclick="setEventTheme('coral')" aria-label="Коралловая тема"></button><button class="event-theme-option" data-theme="night" style="background:linear-gradient(135deg,#27234d,#ff7451)" onclick="setEventTheme('night')" aria-label="Ночная тема"></button><button class="event-theme-option" data-theme="mint" style="background:linear-gradient(135deg,#153e43,#178b73)" onclick="setEventTheme('mint')" aria-label="Мятная тема"></button><button class="event-theme-option" data-theme="sun" style="background:linear-gradient(135deg,#4c3512,#d68a00)" onclick="setEventTheme('sun')" aria-label="Солнечная тема"></button><button class="event-theme-option" data-theme="ocean" style="background:linear-gradient(135deg,#15365f,#2678c9)" onclick="setEventTheme('ocean')" aria-label="Морская тема"></button></div></div><div id="detailDate" class="event-detail-date"></div><div id="detailInfo" class="event-detail-info"></div><div class="event-detail-section"><div class="participants-section-head"><div class="event-detail-section-title">Участники</div><div class="event-guests-summary" aria-live="polite"><span class="event-guests-label">Гости: <strong id="eventTotalGuests">0</strong></span><button id="eventMyGuests" class="event-my-guests" type="button" onclick="decreaseGuests()" aria-label="Уменьшить количество моих гостей">Мои <strong id="eventMyGuestCount">0</strong></button></div></div><div class="participants-content-row"><div id="detailAvatars" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:flex-start;"></div><div class="event-guests-card"><button class="event-guests-logo" type="button" onclick="increaseGuests()" aria-label="Добавить одного гостя"><svg class="event-guests-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="10" r="4.2"></circle><circle cx="22" cy="11.5" r="3.3"></circle><path d="M4.5 24c.5-5 3.1-7.4 7.5-7.4s7 2.4 7.5 7.4"></path><path d="M18.2 18.7c1-.9 2.2-1.4 3.8-1.4 3.2 0 5.1 2.1 5.5 6.7"></path></svg></button></div><div id="noParticipants" class="event-detail-empty">Пока никто не записался</div></div></div></div></div><div class="fixed-bottom event-detail-actions"><button id="detailActionBtn" class="event-detail-action"></button><button id="detailDeleteBtn" class="event-detail-delete">Удалить событие</button><button id="eventDetailMenu" class="event-detail-menu" type="button" onclick="toggleEventAdminMenu()">⋯ Меню</button></div></div></div>
+
+<!-- ПИКЕР ДАТЫ -->
+<div id="datePicker" class="picker-overlay">
+    <div class="picker-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 12px 0;">
+            <span class="month-nav" id="prevMonthBtn" onclick="prevMonth()">‹</span>
+            <span class="month-title" id="monthTitle">Январь 2026</span>
+            <span class="month-nav" id="nextMonthBtn" onclick="nextMonth()">›</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;">
+            <div style="font-size:20px;font-weight:600;">Выберите дату</div>
+            <button class="datetime-btn" onclick="closeDatePicker()">Готово</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+</div>
+
+<!-- ПИКЕР ВРЕМЕНИ -->
+<div id="timePicker" class="picker-overlay">
+    <div class="picker-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;">
+            <div style="font-size:20px;font-weight:600;">Выберите время</div>
+            <button class="datetime-btn" onclick="closeTimePicker()">Готово</button>
+        </div>
+        <div class="time-grid" id="timeGrid"></div>
+    </div>
+</div>
+
+
+<section id="settingsScreen" class="settings-screen" aria-labelledby="settingsTitle">
+  <div class="settings-inner">
+    <div class="settings-header"><button class="settings-back" type="button" onclick="closeSettings()" aria-label="Назад">‹</button><h2 id="settingsTitle" class="settings-title">Настройки профиля</h2></div>
+    <div class="profile-card">
+      <div class="profile-hero"><span id="profileAvatar" class="profile-avatar">?</span><div><h3 id="profileTelegramName">Telegram-профиль</h3><p id="profileTelegramUsername">Данные Telegram</p></div></div>
+      <div class="settings-section"><h4>Данные Telegram</h4><div class="settings-field"><label>ФИО из Telegram</label><input id="profileTelegramFullName" readonly></div><div class="settings-field"><label>Telegram username</label><input id="profileTelegramHandle" readonly></div><div class="settings-field"><label>Текущая роль</label><input id="profileRole" readonly></div><p class="settings-note">Эти данные берутся из Telegram или учетной записи и не редактируются в приложении.</p></div>
+      <div class="settings-section"><h4>О себе</h4><div class="settings-field"><label for="profileDisplayName">Отображаемое имя</label><input id="profileDisplayName" maxlength="80" placeholder="Как к вам обращаться"></div><div class="settings-field"><label for="profileContact">Контакты</label><input id="profileContact" maxlength="120" placeholder="Телефон, сайт или другой способ связи"></div><div class="settings-field"><label for="profileBio">Информация о себе</label><textarea id="profileBio" maxlength="600" placeholder="Расскажите немного о себе"></textarea></div></div>
+      <div class="settings-section"><h4>Оформление</h4><div class="appearance-row"><div class="appearance-label"><strong>Тема</strong><span>Выберите удобный режим</span></div><div class="theme-choice"><button id="settingsLightTheme" type="button" onclick="setProfileTheme('light')">Светлая</button><button id="settingsDarkTheme" type="button" onclick="setProfileTheme('dark')">Тёмная</button></div></div></div>
+      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button><button class="btn-secondary" type="button" onclick="copyAuthTrace()">Скопировать диагностику авторизации</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="participantProfileModal" class="participant-profile-modal" onclick="if(event.target===this)closeParticipantProfile()"><div class="participant-profile-card"><div class="participant-profile-head"><div id="participantProfileAvatar" class="participant-profile-avatar">?</div><div><div id="participantProfileName" class="participant-profile-name">Участник</div><div id="participantProfileSub" class="participant-profile-sub"></div></div><button class="participant-profile-close" type="button" onclick="closeParticipantProfile()">Закрыть</button></div><div id="participantProfileStats" class="participant-profile-stats"><div class="participant-profile-stat"><strong>…</strong><span>Загрузка</span></div></div></div></section>
+<script>
+window.addEventListener('error', (event) => {
+  console.error('EventHub runtime error', event.error || event.message);
+  const shell = document.getElementById('authShell');
+  const list = document.getElementById('eventsList');
+  if (shell && list && !list.dataset.runtimeFallback) {
+    list.dataset.runtimeFallback = 'true';
+    list.innerHTML = '<div class="empty"><h3>Приложение запущено с ограничениями</h3><p>Обновите Mini App и попробуйте снова.</p></div>';
+    shell.classList.add('hidden');
+  }
+});
+let tg = window.Telegram?.WebApp || null;
+if (tg) { try { tg.ready(); } catch (_) {} try { tg.expand(); } catch (_) {} try { tg.enableClosingConfirmation(); } catch (_) {} }
+const API_URL = "https://n8n.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad45f";
+let telegramInitData = String(tg?.initData || '');
+let user = tg?.initDataUnsafe?.user || {};
+let accessToken = (() => { try { return sessionStorage.getItem('eventhub_access_token') || ''; } catch (_) { return ''; } })();
+let telegramAuthInFlight = null;
+let appInitInFlight = null;
+let authState = 'pending';
+
+function refreshTelegramContext() {
+    const webApp = window.Telegram?.WebApp;
+    if (webApp) tg = webApp;
+    if (tg) {
+        try { tg.ready(); } catch (_) {}
+        try { tg.expand(); } catch (_) {}
+    }
+    const initData = String(tg?.initData || '').trim();
+    const telegramUser = tg?.initDataUnsafe?.user;
+    if (initData) telegramInitData = initData;
+    if (telegramUser?.id) user = telegramUser;
+    return { initData: telegramInitData, user };
+}
+
+let isAdmin = false;
+let events = [];
+let selectedDate = null;
+let selectedHour = null;
+let currentEventId = null;
+let guestCount = 0;
+let guestTotalBase = 0;
+let socialCurrentEvent = null;
+
+let calendarYear  = new Date().getFullYear();
+let calendarMonth = new Date().getMonth();
+
+function localToUTC(dateStr, hour) {
+    const d = new Date(dateStr);
+    d.setHours(hour, 0, 0, 0);
+    return d.toISOString().slice(0, 19);
+}
+
+function renderGuestCounters(){
+    const nextMyGuests = Math.max(0, Number(guestCount) || 0);
+    const myGuestsEl = document.getElementById('eventMyGuestCount');
+    const totalGuestsEl = document.getElementById('eventTotalGuests');
+    const myGuestsButton = document.getElementById('eventMyGuests');
+    if (myGuestsEl) myGuestsEl.textContent = nextMyGuests;
+    if (myGuestsButton) myGuestsButton.style.display = nextMyGuests > 0 ? 'inline-block' : 'none';
+    if (totalGuestsEl) totalGuestsEl.textContent = Math.max(0, Number(guestTotalBase || 0) - Number(initialGuestSlots || 0) + nextMyGuests);
+}
+window.increaseGuests = function(){ guestCount = (Number(guestCount) || 0) + 1; renderGuestCounters(); };
+window.decreaseGuests = function(){ guestCount = Math.max(0, (Number(guestCount) || 0) - 1); renderGuestCounters(); };
+
+function formatDateShort(dateStr) {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    if (d.toDateString() === today.toDateString()) return "Сегодня";
+    if (d.toDateString() === tomorrow.toDateString()) return "Завтра";
+    return d.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+}
+
+async function api(entity, action, data = {}) {
+    const requestId = 'auth-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const requestStartedAt = Date.now();
+    try {
+        const context = refreshTelegramContext();
+        const currentInitData = context.initData;
+        const currentUser = context.user || {};
+        // auth/validate must always use the current Telegram Mini App context.
+        // A cached access token is only valid for session-based actions and can
+        // otherwise hide the server's current role/is_admin response.
+        // Telegram auth is valid only with the signed initData string. The
+        // unsafe user object is useful for rendering a profile, but must never
+        // be treated as authentication material for n8n.
+        const useTelegramAuth = entity === 'auth' && action === 'validate' && Boolean(currentInitData);
+        const auth = useTelegramAuth || !accessToken
+          ? { tg_init_data: currentInitData, user: currentUser }
+          : { access_token: accessToken, user: currentUser };
+        if (entity === 'auth') recordAuthTrace('auth_request', {
+          request_id: requestId,
+          action,
+          auth_mode: useTelegramAuth ? 'telegram_init_data' : (accessToken ? 'access_token' : 'empty_auth'),
+          has_signed_init_data: Boolean(currentInitData),
+          telegram_user_id_present: Boolean(currentUser?.id),
+          request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
+        });
+        if (entity === 'auth') recordAuthTrace('fetch_start', { request_id: requestId, action });
+        if (entity === 'auth') recordAuthTrace('network_context', {
+          origin: location.origin,
+          online: navigator.onLine,
+          user_agent: navigator.userAgent.slice(0, 180),
+          api_host: (() => { try { return new URL(API_URL).host; } catch (_) { return ''; } })()
+        });
+        const maxAttempts = entity === 'auth' && action === 'validate' ? 2 : 1;
+        let res;
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const controller = typeof AbortController === 'function' ? new AbortController() : null;
+          const timeout = setTimeout(() => controller?.abort(), 15000);
+          try {
+            res = await fetch(API_URL, {
+              method: "POST",
+              mode: "cors",
+              credentials: "omit",
+              cache: "no-store",
+              referrerPolicy: "no-referrer",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({ entity, action, data, auth }),
+              signal: controller?.signal
+            });
+            break;
+          } catch (error) {
+            lastError = error;
+            const timedOut = error?.name === 'AbortError';
+            if (entity === 'auth') recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
+              request_id: requestId,
+              action,
+              attempt,
+              max_attempts: maxAttempts,
+              elapsed_ms: Date.now() - requestStartedAt,
+              error_name: error?.name || 'Error',
+              error_message: String(error?.message || 'fetch failed').slice(0, 160)
+            });
+            if (attempt < maxAttempts) {
+              if (entity === 'auth') recordAuthTrace('auth_retry', { request_id: requestId, action, attempt: attempt + 1, reason: timedOut ? 'timeout' : 'network_error' });
+              await new Promise(resolve => setTimeout(resolve, 400));
+              continue;
+            }
+          } finally {
+            clearTimeout(timeout);
+          }
+        }
+        if (!res) throw lastError || new Error('fetch failed');
+        const raw = await res.text();
+        const parsed = parseWebhookValue(raw);
+        if (entity === 'auth') recordAuthTrace('webhook_response', {
+          request_id: requestId,
+          action,
+          http_status: res.status,
+          ok: res.ok,
+          elapsed_ms: Date.now() - requestStartedAt,
+          raw_length: raw.length,
+          raw_prefix: raw.slice(0, 80).replace(/[\r\n\t]/g, ' '),
+          shape: webhookShape(parsed),
+          error: webhookError(parsed) || null
+        });
+        if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
+        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true, http_status: res.status };
+        if (webhookError(parsed)) return { success: false, error: webhookError(parsed), http_status: res.status, webhook_response: parsed };
+        return parsed;
+    } catch (e) {
+        console.error(e);
+      if (entity === 'auth' && e?.name !== 'AbortError') recordAuthTrace('auth_request_exception', { request_id: requestId, action, elapsed_ms: Date.now() - requestStartedAt, error_name: e?.name || 'Error' });
+        const error = document.getElementById('authError');
+        if (error) error.textContent = "Нет связи с сервером";
+        return { success: false, error: "Нет связи с сервером" };
+    }
+}
+
+async function loadModerators() {
+    const select = document.getElementById('eventModeratorInput');
+    try {
+        const res = await api("users", "get_moderators");
+        if (res?.success === false) throw new Error(res.error || res.message || 'Ошибка webhook');
+        const mods = webhookCollection(res, ['moderators']);
+        if (!Array.isArray(mods)) throw new Error('Webhook вернул неверный формат списка модераторов');
+        select.innerHTML = '<option value="">Не выбран (я модератор)</option>';
+        mods.forEach(m => {
+            const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Без имени';
+            const username = m.username ? ` (@${m.username})` : '';
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = name + username;
+            select.appendChild(opt);
+        });
+    } catch(e) {
+        console.error('get_moderators:', e);
+        select.innerHTML = '<option value="">Ошибка webhook: модераторы не загружены</option>';
+        showToast(e?.message || 'Ошибка обращения к webhook', 'error');
+    }
+}
+
+function prevMonth() {
+    const today = new Date();
+    let newMonth = calendarMonth - 1;
+    let newYear = calendarYear;
+    if (newMonth < 0) { newMonth = 11; newYear--; }
+    if (newYear < today.getFullYear() || 
+       (newYear === today.getFullYear() && newMonth < today.getMonth())) return;
+    calendarMonth = newMonth;
+    calendarYear = newYear;
+    renderCalendar();
+}
+
+function nextMonth() {
+    calendarMonth++;
+    if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+    renderCalendar();
+}
+
+function updateMonthTitle() {
+    const titleEl = document.getElementById('monthTitle');
+    if (!titleEl) return;
+    const date = new Date(calendarYear, calendarMonth, 1);
+    titleEl.textContent = date.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+
+    const today = new Date();
+    const prevBtn = document.getElementById('prevMonthBtn');
+    const isCurrent = (calendarYear === today.getFullYear() && calendarMonth === today.getMonth());
+    if (isCurrent) {
+        prevBtn.classList.add('inactive');
+        prevBtn.onclick = null;
+    } else {
+        prevBtn.classList.remove('inactive');
+        prevBtn.onclick = prevMonth;
+    }
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
+    grid.innerHTML = `
+        <div class="calendar-day-header">Пн</div><div class="calendar-day-header">Вт</div>
+        <div class="calendar-day-header">Ср</div><div class="calendar-day-header">Чт</div>
+        <div class="calendar-day-header">Пт</div><div class="calendar-day-header">Сб</div>
+        <div class="calendar-day-header">Вс</div>
+    `;
+
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+
+    for (let i = 0; i < startDay; i++) grid.innerHTML += `<div></div>`;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const cellDate = new Date(calendarYear, calendarMonth, day);
+        const isPast   = cellDate < todayStart;
+        const isToday  = cellDate.getTime() === todayStart.getTime();
+        const isSel    = selectedDate === dateStr;
+
+        let cls = "calendar-day";
+        if (isToday) cls += " today";
+        if (isSel)   cls += " selected";
+        if (isPast)  cls += " inactive";
+
+        const onclick = isPast ? "" : `onclick="selectDate('${dateStr}')"`; 
+        grid.innerHTML += `<div class="${cls}" ${onclick}>${day}</div>`;
+    }
+    updateMonthTitle();
+}
+
+function openDatePicker() {
+    const now = new Date();
+    if (!selectedDate) {
+        calendarYear = now.getFullYear();
+        calendarMonth = now.getMonth();
+    } else {
+        const d = new Date(selectedDate);
+        calendarYear = d.getFullYear();
+        calendarMonth = d.getMonth();
+    }
+    renderCalendar();
+    document.getElementById('datePicker').classList.add('show');
+}
+
+function closeDatePicker() {
+    document.getElementById('datePicker').classList.remove('show');
+}
+
+function openTimePicker() {
+    renderTimeGrid();
+    document.getElementById('timePicker').classList.add('show');
+}
+
+function closeTimePicker() {
+    document.getElementById('timePicker').classList.remove('show');
+}
+
+function renderTimeGrid() {
+    const grid = document.getElementById('timeGrid');
+    grid.innerHTML = '';
+    for (let h = 8; h <= 20; h++) {
+        const timeStr = String(h).padStart(2,'0') + ':00';
+        const btn = document.createElement('div');
+        btn.className = 'time-btn' + (h === selectedHour ? ' selected' : '');
+        btn.textContent = timeStr;
+        btn.onclick = () => {
+            selectedHour = h;
+            document.getElementById('timeChip').textContent = timeStr;
+            closeTimePicker();
+            checkReady();
+        };
+        grid.appendChild(btn);
+    }
+}
+
+function checkReady() {
+    const title = document.getElementById('eventTitleInput').value.trim();
+    const ready = !!(selectedDate && selectedHour !== null && title);
+    document.getElementById('saveBtn').disabled = !ready;
+}
+
+document.getElementById('fab').onclick = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    selectedDate = today;
+    selectedHour = 18;
+    document.getElementById('dateChip').textContent = "Сегодня";
+    document.getElementById('timeChip').textContent = "18:00";
+    document.getElementById('eventTitleInput').value = '';
+    document.getElementById('eventDescInput').value = '';
+    document.getElementById('eventMaxInput').value = '';
+    document.getElementById('eventPriceInput').value = '0';
+    if (isAdmin) await loadModerators();
+    document.getElementById('createEventModal').classList.add('show');
+    checkReady();
+};
+
+function closeCreateModal() {
+    document.getElementById('createEventModal').classList.remove('show');
+}
+
+async function saveNewEvent() {
+    if (!selectedDate || selectedHour === null) return tg.showAlert("Выберите дату и время");
+    const title = document.getElementById('eventTitleInput').value.trim();
+    if (!title) return tg.showAlert("Введите название");
+    const event_time = localToUTC(selectedDate, selectedHour);
+    const data = {
+        title,
+        description: document.getElementById('eventDescInput').value.trim(),
+        event_time,
+        max_participants: parseInt(document.getElementById('eventMaxInput').value) || 0,
+        moderator_id: document.getElementById('eventModeratorInput').value || null,
+        price_rub: parseInt(document.getElementById('eventPriceInput').value) || 0
+    };
+    const res = await api("events", "create", data);
+    const createdEvent = authUserFromResponse(res) || webhookValue(res, ['event']);
+    if (createdEvent?.id || res?.success === true || res?.ok === true) {
+        tg.showAlert("Событие создано!");
+        closeCreateModal();
+        await init();
+    } else {
+        tg.showAlert("Ошибка создания события");
+    }
+}
+
+
+const SOCIAL_REFERRAL_KEY = 'eventhub_referral_token';
+const SOCIAL_EVENT_KEY = 'eventhub_referral_event';
+function getStartParam(){
+  const query = new URLSearchParams(window.location.search);
+  return tg?.initDataUnsafe?.start_param || query.get('tgWebAppStartParam') || query.get('startapp') || '';
+}
+function captureReferral(){
+  const raw = String(getStartParam() || '');
+  const match = raw.match(/^event[_-]([0-9a-f-]+?)(?:[_-]ref[_-]([0-9]+))?$/i);
+  if (!match) return;
+  const eventId = match[1];
+  const inviterId = match[2] || '';
+  localStorage.setItem(SOCIAL_EVENT_KEY, eventId);
+  localStorage.setItem(SOCIAL_REFERRAL_KEY, raw);
+  window.eventhubReferral = { event_id: eventId, inviter_id: inviterId, token: raw };
+}
+function getReferralToken(eventId){
+  const savedEvent = localStorage.getItem(SOCIAL_EVENT_KEY) || '';
+  return savedEvent === String(eventId) ? (localStorage.getItem(SOCIAL_REFERRAL_KEY) || '') : '';
+}
+function buildSocialUrl(eventId){
+  const botUrl = new URL('https://t.me/vkor2105_bot');
+  botUrl.searchParams.set('startapp', 'event_' + String(eventId) + '_ref_' + String(user?.id || 'share'));
+  return botUrl.toString();
+}
+function getEventShareText(ev){
+  const date = new Date(ev.event_date).toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+  const time = new Date(ev.event_date).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  return 'Пойдём вместе на «' + ev.title + '»? ' + date + ' в ' + time + '. Открой ссылку, чтобы присоединиться:';
+}
+async function trackSocial(action, data){
+  try {
+    const auth = accessToken ? { access_token: accessToken, user } : { tg_init_data: tg?.initData || '', user };
+    await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ...data, action, auth }) });
+  } catch (_) { /* analytics must not block UX */ }
+}
+async function loadSocialStats(eventId){
+  try { const response=await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stats',event_id:eventId,auth:{tg_init_data:tg?.initData||'',user}})}); const raw=await response.text(); const parsed=raw?JSON.parse(raw):null; return Array.isArray(parsed)?(parsed[0]||{}):(parsed?.result||parsed||{}); } catch(_){ return null; }
+}
+async function renderSocialStats(eventId){
+  if(!isAdmin)return; const detailInfo=document.getElementById('detailInfo'); if(!detailInfo)return; const stats=await loadSocialStats(eventId); if(!stats||stats.error)return;
+  const iconStat=(icon,value,label)=>'<div class="social-stat" title="'+label+'" aria-label="'+label+': '+Number(value||0)+'"><strong>'+Number(value||0)+'</strong><span aria-hidden="true">'+icon+'</span><span class="social-stat-label">'+label+'</span></div>';
+  detailInfo.insertAdjacentHTML('beforeend','<div class="social-stats" aria-label="Статистика распространения"><div class="social-stats-grid">'+iconStat('👁',stats.views,'Просмотров')+iconStat('↗',stats.shares,'Поделились')+iconStat('✓',stats.joins,'Регистраций')+iconStat('⌁',stats.referral_joins,'От приглашений')+iconStat('♟',stats.invited_users,'Новых участников')+iconStat('♧',stats.guest_slots,'Гостей')+'</div><button class="social-stats-refresh" type="button" title="Обновить статистику" aria-label="Обновить статистику" onclick="refreshSocialStats()">↻</button></div>');
+ }
+async function refreshSocialStats(){document.querySelector('.social-stats')?.remove();if(currentEventId)await renderSocialStats(currentEventId);}
+async function shareEvent(eventId){
+  const ev = events.find(item => String(item.id) === String(eventId));
+  if (!ev) return;
+  const url = buildSocialUrl(eventId);
+  const text = getEventShareText(ev);
+  await trackSocial('share', { event_id: eventId, referral_token: url.includes('startapp=') ? new URL(url).searchParams.get('startapp') : '' });
+  const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+  if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+  else if (navigator.share) navigator.share({title: ev.title, text, url}).catch(() => {});
+  else { await navigator.clipboard?.writeText(url); notifyUser('Ссылка на событие скопирована'); }
+}
+function renderSocialActions(ev, isJoined, placesFree){
+  const detailInfo = document.getElementById('detailInfo');
+  if (!detailInfo) return;
+  const count = Number(ev.participants_count || 0);
+  const friends = Array.isArray(ev.participants) ? ev.participants.length : 0;
+  const freeText = placesFree === null ? 'Места без лимита' : ('Свободно: ' + Math.max(0, placesFree));
+  const referral = getReferralToken(ev.id);
+  detailInfo.insertAdjacentHTML('beforeend', '<div class="social-signal"><span>👥 <strong>' + count + '</strong> участников</span><span>📍 ' + freeText + '</span>' + (friends > 1 ? '<span>✨ Уже идут вместе</span>' : '') + '</div>' + (referral ? '<div class="social-invite-note">Вы открыли событие по приглашению. Можно присоединиться вместе с другом.</div>' : ''));
+  const actions = document.querySelector('.event-detail-actions');
+  if (!actions || actions.querySelector('.social-actions')) return;
+  const socialActions = document.createElement('div');
+  socialActions.className = 'social-actions';
+  const inviteButton = document.createElement('button');
+  inviteButton.className = 'social-action primary';
+  inviteButton.type = 'button';
+  inviteButton.innerHTML = '↗<br><small>Позвать</small>'; inviteButton.title = 'Позвать друзей';
+  inviteButton.onclick = () => shareEvent(ev.id);
+  const togetherButton = document.createElement('button');
+  togetherButton.className = 'social-action';
+  togetherButton.type = 'button';
+  togetherButton.innerHTML = '♧<br><small>Вместе</small>'; togetherButton.title = 'Пойти вместе';
+  togetherButton.onclick = () => shareEvent(ev.id);
+  socialActions.append(inviteButton, togetherButton);
+  actions.prepend(socialActions);
+}
+
+
+function addEventToCalendar(ev){
+  const start=new Date(ev.event_date); const end=new Date(start.getTime()+2*60*60*1000);
+  const icsDate=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const esc=v=>String(v||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\r?\n/g,'\\n');
+  const body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//VKOR//EventHub//RU','BEGIN:VEVENT','UID:eventhub-'+esc(ev.id)+'@vkor2105_bot','DTSTAMP:'+icsDate(new Date()),'DTSTART:'+icsDate(start),'DTEND:'+icsDate(end),'SUMMARY:'+esc(ev.title||'Событие'),'DESCRIPTION:'+esc(ev.description||''),'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:Напоминание о событии '+esc(ev.title||''),'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const uri='data:text/calendar;charset=utf-8,'+encodeURIComponent(body); const a=document.createElement('a'); a.href=uri; a.download=esc(ev.title||'event')+'.ics'; a.click(); if(tg?.openLink) setTimeout(()=>tg.openLink(uri),50); showToast('Событие добавлено в календарь','success');
+}
+
+async function loadParticipantStats(userId){try{const r=await fetch('https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'user_stats',user_id:userId,auth:{tg_init_data:tg?.initData||'',user}})});const raw=await r.text();const d=raw?JSON.parse(raw):{};return Array.isArray(d)?(d[0]||{}):(d.result||d||{});}catch(_){return {};}}
+async function openParticipantProfile(participant){const modal=document.getElementById('participantProfileModal');if(!modal)return;const name=[participant?.first_name,participant?.last_name].filter(Boolean).join(' ')||participant?.username||'Участник';document.getElementById('participantProfileName').textContent=name;document.getElementById('participantProfileSub').textContent=participant?.username?'@'+participant.username:'Участник события';const av=document.getElementById('participantProfileAvatar');av.innerHTML='';if(participant?.photo_url||participant?.userpic){const im=document.createElement('img');im.src=participant.photo_url||participant.userpic;im.onerror=()=>{av.textContent=(participant?.first_name?.[0]||'')+(participant?.last_name?.[0]||'')||'?';};av.appendChild(im);}else av.textContent=(participant?.first_name?.[0]||'')+(participant?.last_name?.[0]||'')||'?';const box=document.getElementById('participantProfileStats');box.innerHTML='<div class="participant-profile-stat"><strong>…</strong><span>Загрузка</span></div>';modal.classList.add('show');const s=await loadParticipantStats(participant?.id);const items=[['referrals','Рефералы бота','👤'],['invited_participants','Приглашены','🤝'],['together_visits','Ходил вместе','♧'],['event_joins','Участия','✓'],['shares','Поделился','↗'],['views','Просмотры','◉']];box.innerHTML=items.map(([k,l,i])=>'<div class="participant-profile-stat" title="'+l+'"><strong>'+i+' '+Number(s[k]||0)+'</strong><span>'+l+'</span></div>').join('');}
+function closeParticipantProfile(){document.getElementById('participantProfileModal')?.classList.remove('show');}
+
+
+function eventThemeKey(id){return 'eventhub_event_theme_'+String(id);}
+function applyEventTheme(ev){const panel=document.querySelector('.event-detail-panel');if(!panel)return;const theme=localStorage.getItem(eventThemeKey(ev.id))||ev.theme||'coral';panel.classList.remove('event-theme-night','event-theme-mint','event-theme-sun','event-theme-ocean');if(theme!=='coral')panel.classList.add('event-theme-'+theme);document.querySelectorAll('.event-theme-option').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));document.getElementById('eventThemeEditor')?.classList.remove('show');}
+function toggleEventThemeEditor(){if(!isAdmin)return;document.getElementById('eventThemeEditor')?.classList.toggle('show');document.getElementById('eventDetailMenu')?.classList.remove('show');}
+function setEventTheme(theme){if(!isAdmin||!currentEventId)return;localStorage.setItem(eventThemeKey(currentEventId),theme);const ev=events.find(x=>String(x.id)===String(currentEventId));if(ev)applyEventTheme(ev);showToast('Оформление события обновлено','success');}
+function toggleEventAdminMenu(){if(!isAdmin)return;const btn=document.getElementById('detailDeleteBtn');if(btn){btn.style.display=btn.style.display==='block'?'none':'block';btn.style.position='fixed';btn.style.right='18px';btn.style.bottom='86px';btn.style.zIndex='2400';btn.style.background='var(--card)';btn.style.padding='12px 16px';btn.style.borderRadius='14px';btn.style.boxShadow='0 10px 24px rgba(0,0,0,.16)';}toggleEventThemeEditor();}
+
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
+function showToast(message, tone = 'default') { const stack = document.getElementById('toastStack'); if (!stack || !message) return; const toast = document.createElement('div'); toast.className = 'toast'; if (tone === 'success') toast.style.background = 'rgba(20,142,103,.94)'; if (tone === 'error') toast.style.background = 'rgba(194,57,78,.94)'; toast.textContent = message; stack.appendChild(toast); setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => toast.remove(), 220); }, 2800); }
+function showSkeleton() { const list = document.getElementById('eventsList'); if (list) list.innerHTML = '<div class="skeleton-list"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>'; }
+function applyTheme(theme) { document.documentElement.classList.toggle('dark', theme === 'dark'); }
+
+function showAuthError(message) { const error = document.getElementById('authError'); if (error) error.textContent = message || ''; }
+function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
+function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
+function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
+function webhookShape(value, depth = 0) {
+  if (depth > 3 || value === null || value === undefined) return value === null ? 'null' : 'undefined';
+  if (Array.isArray(value)) return { type: 'array', length: value.length, items: value.slice(0, 3).map(item => webhookShape(item, depth + 1)) };
+  if (typeof value === 'object') return { type: 'object', keys: Object.keys(value).slice(0, 30), nested: Object.fromEntries(Object.keys(value).filter(key => ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'permissions'].includes(key)).slice(0, 8).map(key => [key, webhookShape(value[key], depth + 1)])) };
+  return typeof value;
+}
+function recordAuthTrace(event, details = {}) {
+  const entry = { at: new Date().toISOString(), event, ...details };
+  window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-30);
+  try { localStorage.setItem('eventhub_auth_debug', JSON.stringify(window.__eventhubAuthDebug)); } catch (_) {}
+  if (typeof console !== 'undefined' && console.info) console.info('[EventHub auth]', entry);
+}
+function copyAuthTrace() {
+  const trace = JSON.stringify({
+    generated_at: new Date().toISOString(),
+    url: location.origin + location.pathname,
+    auth_state: authState,
+    trace: window.__eventhubAuthDebug || []
+  }, null, 2);
+  const done = () => showToast('Диагностика скопирована', 'success');
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(trace).then(done).catch(() => fallbackCopy(trace, done));
+  else fallbackCopy(trace, done);
+}
+function fallbackCopy(text, done) {
+  const area = document.createElement('textarea'); area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.appendChild(area); area.select(); try { document.execCommand('copy'); done(); } catch (_) { showToast('Не удалось скопировать диагностику', 'error'); } area.remove();
+}
+window.copyAuthTrace = copyAuthTrace;
+function parseWebhookValue(value, depth = 0) {
+  if (depth > 4 || value === null || value === undefined) return value;
+  if (typeof value !== 'string') return value;
+  const text = value.trim();
+  if (!text) return null;
+  try { return parseWebhookValue(JSON.parse(text), depth + 1); } catch (_) { return value; }
+}
+function webhookError(response, depth = 0) {
+  const value = parseWebhookValue(response, depth);
+  if (depth > 4 || value === null || value === undefined) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) { const error = webhookError(item, depth + 1); if (error) return error; }
+    return null;
+  }
+  if (typeof value !== 'object') return null;
+  if (value.success === false || value.ok === false || String(value.status ?? '').toLowerCase() === 'error') {
+    return String(value.error || value.message || value.detail || 'Ошибка webhook');
+  }
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
+    if (value[key] !== undefined) { const error = webhookError(value[key], depth + 1); if (error) return error; }
+  }
+  return null;
+}
+function authUserFromResponse(response) {
+  // n8n's `allIncomingItems` response is sometimes a JSON string (and can
+  // contain the account under one of several envelope names).  Normalize it
+  // before looking at the account so role/is_admin are not lost.
+  response = parseWebhookValue(response);
+  if (response === null || response === undefined || response === '') return null;
+  if (Array.isArray(response)) {
+    for (const item of response) {
+      const user = authUserFromResponse(item);
+      if (user) return user;
+    }
+    return null;
+  }
+  if (!response || typeof response !== 'object' || webhookError(response)) return null;
+  const accountKeys = ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'admin', 'isAdministrator', 'role', 'role_name', 'user_role', 'userRole'];
+  const account = {};
+  for (const key of accountKeys) {
+    if (response[key] !== undefined) account[key] = response[key];
+  }
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'auth_user', 'telegram_user', 'profile', 'permissions', 'rows', 'items']) {
+    if (response[key] !== undefined) {
+      const nested = authUserFromResponse(response[key]);
+      if (nested) return normalizeAuthAccount({ ...account, ...nested });
+    }
+  }
+  if (Object.keys(account).length) return normalizeAuthAccount(account);
+  return null;
+}
+function normalizeAuthAccount(account) {
+  if (!account || typeof account !== 'object') return account;
+  const permissions = account.permissions && typeof account.permissions === 'object' ? account.permissions : {};
+  const rawRole = account.role ?? account.user_role ?? account.userRole ?? account.role_name ?? permissions.role ?? permissions.user_role;
+  const rawAdmin = account.is_admin ?? account.isAdmin ?? account.admin ?? account.isAdministrator ?? permissions.is_admin ?? permissions.isAdmin ?? permissions.admin;
+  const normalized = { ...account };
+  if (rawRole !== undefined && rawRole !== null && rawRole !== '') normalized.role = String(rawRole);
+  if (rawAdmin !== undefined && rawAdmin !== null) normalized.is_admin = truthyFlag(rawAdmin);
+  if (normalized.id === undefined && normalized.user_id !== undefined) normalized.id = normalized.user_id;
+  return normalized;
+}
+function webhookValue(response, keys = []) {
+  response = parseWebhookValue(response);
+  if (Array.isArray(response)) {
+    for (const item of response) {
+      const value = webhookValue(item, keys);
+      if (value !== null && value !== undefined && value !== item) return value;
+    }
+    return response;
+  }
+  if (!response || typeof response !== 'object' || webhookError(response)) return null;
+  for (const key of keys) {
+    if (response[key] !== undefined) return response[key];
+  }
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
+    if (response[key] !== undefined) {
+      const value = webhookValue(response[key], keys);
+      if (value !== null && value !== undefined) return value;
+    }
+  }
+  return response;
+}
+function webhookCollection(response, keys = []) {
+  response = parseWebhookValue(response);
+  if (response === null || response === undefined || response === '') return [];
+  if (Array.isArray(response)) return response.reduce((all, item) => all.concat(webhookCollection(item, keys)), []);
+  if (!response || typeof response !== 'object' || webhookError(response)) return [];
+  for (const key of keys) if (response[key] !== undefined) return webhookCollection(response[key], []);
+  for (const key of ['body', 'response', 'json', 'result', 'data', 'items', 'rows', 'records']) {
+    if (response[key] !== undefined) {
+      const items = webhookCollection(response[key], keys);
+      if (items.length) return items;
+    }
+  }
+  // n8n `allIncomingItems` normally returns plain row objects. Do not turn
+  // arbitrary status/error objects into fake events or moderators.
+  return response.id !== undefined ? [response] : [];
+}
+function truthyFlag(value) {
+  return value === true || value === 1 || ['true', '1', 'yes', 'admin', 'administrator'].includes(String(value ?? '').trim().toLowerCase());
+}
+function userIsAdmin(account) {
+  if (!account || typeof account !== 'object') return false;
+  const permissions = account.permissions && typeof account.permissions === 'object' ? account.permissions : {};
+  return truthyFlag(account.is_admin) || truthyFlag(account.isAdmin) || truthyFlag(account.admin) || truthyFlag(account.isAdministrator) ||
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role ?? '').trim().toLowerCase()) ||
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role_name ?? '').trim().toLowerCase()) ||
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? account.userRole ?? permissions.role ?? permissions.user_role ?? '').trim().toLowerCase()) ||
+    truthyFlag(permissions.is_admin) || truthyFlag(permissions.isAdmin) || truthyFlag(permissions.admin);
+}
+function syncAdminVisibility() {
+  const visible = Boolean(isAdmin);
+  ['fab', 'adminBadge', 'organizerDashboardButton'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !visible));
+  document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !visible);
+}
+async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
+async function init(forceTelegramMode = false) {
+    if (appInitInFlight) return appInitInFlight;
+    appInitInFlight = (async () => {
+      const telegramContext = refreshTelegramContext();
+      const hasValidTelegramAuth = Boolean(telegramContext.initData);
+      const openedInTelegram = hasValidTelegramAuth;
+      authState = 'checking';
+      recordAuthTrace('auth_start', { has_signed_init_data: hasValidTelegramAuth, has_telegram_user: Boolean(telegramContext.user?.id), has_session_token: Boolean(accessToken) });
+      // Не показываем форму во время автоматической Telegram-авторизации.
+      // Для прямой ссылки форма появится ниже только после завершения проверки.
+      setAuthVisible(false);
+      captureReferral();
+      showSkeleton();
+      // Validate the current Telegram identity first. A cached session is used
+      // only for direct browser openings, so an older role cannot win.
+      // In Telegram, the current signed initData is authoritative. A cached
+      // session may contain an older role and must not mask Telegram validate.
+      let authRes = hasValidTelegramAuth ? await api('auth', 'validate') : (accessToken ? await api('auth', 'validate_session') : null);
+      let authenticatedUser = authUserFromResponse(authRes);
+      recordAuthTrace('auth_parsed', {
+        response_shape: webhookShape(authRes),
+        account_keys: Object.keys(authenticatedUser || {}).filter(key => !['access_token'].includes(key)).slice(0, 30),
+        has_id: Boolean(authenticatedUser?.id || authenticatedUser?.user_id),
+        has_is_admin: authenticatedUser?.is_admin !== undefined,
+        is_admin_value_type: authenticatedUser?.is_admin === undefined ? 'missing' : typeof authenticatedUser.is_admin,
+        normalized_is_admin: authenticatedUser ? userIsAdmin(authenticatedUser) : false,
+        role_present: Boolean(authenticatedUser?.role || authenticatedUser?.user_role || authenticatedUser?.userRole)
+      });
+      if (!authenticatedUser && accessToken && !hasValidTelegramAuth) {
+          accessToken = '';
+          try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
+      }
+      if (!authenticatedUser) {
+        authState = 'error';
+        recordAuthTrace('auth_failed', { opened_in_telegram: openedInTelegram, response_shape: webhookShape(authRes), response_error: webhookError(authRes) || null });
+        // В Telegram Mini App не переключаемся на логин/пароль: Telegram должен
+        // авторизовать пользователя автоматически. Форма предназначена только
+        // для обычного открытия страницы по прямой ссылке.
+        if (!openedInTelegram && !forceTelegramMode) setAuthVisible(true);
+        else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
+        return false;
+      }
+      // Keep Telegram identity, but let the server's validated account win for
+      // id/role/flags.  The webhook may return user_id instead of id.
+      user = { ...user, ...authenticatedUser, id: authenticatedUser.id ?? authenticatedUser.user_id ?? user.id };
+      user = normalizeAuthAccount(user);
+      if (authenticatedUser.access_token) {
+        accessToken = String(authenticatedUser.access_token);
+        try { sessionStorage.setItem('eventhub_access_token', accessToken); } catch (_) {}
+      }
+      isAdmin = userIsAdmin(user);
+      authState = 'ready';
+      recordAuthTrace('auth_success', { user_id_present: Boolean(user?.id), is_admin: isAdmin, role: user?.role || user?.user_role || null, response_shape: webhookShape(authRes) });
+      setAuthVisible(false);
+      renderOwnerProfile();
+      syncAdminVisibility();
+      if (isAdmin) await loadModerators();
+
+      const eventsRes = await api("events", "list");
+      if (eventsRes?.success === false && !eventsRes.empty_response) {
+        showToast(`Ошибка webhook: ${eventsRes.error || 'не удалось загрузить события'}`, 'error');
+    }
+      events = webhookCollection(eventsRes, ['events']);
+      render();
+      return true;
+    // Always start on the main event list. Referral data is retained for a later join action.
+    })().finally(() => { appInitInFlight = null; });
+    return appInitInFlight;
+}
+
+function render() {
+    const list = document.getElementById('eventsList');
+    if (!events.length) {
+        list.innerHTML = '<div class="empty"><h3>Пока нет событий</h3><p>' + (isAdmin ? 'Создайте первое событие с помощью кнопки +' : 'Загляните позже — новые события появятся здесь') + '</p></div>';
+        return;
+    }
+    list.innerHTML = events.sort((a, b) => new Date(a.event_date) - new Date(b.event_date)).map((ev, index) => {
+        const d = new Date(ev.event_date);
+        const day = d.toLocaleDateString('ru-RU', { day: '2-digit' });
+        const month = d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '');
+        const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const p = parseInt(ev.participants_count) || 0;
+        const max = ev.max_participants ? ' / ' + ev.max_participants + ' мест' : ' участников';
+        const price = ev.price_rub > 0 ? ev.price_rub + ' ₽' : 'Бесплатно';
+        const pc = ev.price_rub > 0 ? '' : 'free';
+        const description = ev.description ? escapeHtml(ev.description) : 'Откройте событие, чтобы узнать подробности';
+        const isJoined = ev.is_joined || ev.joined || ev.user_joined;
+        return '<div class="event-card" style="animation-delay:' + Math.min(index * 55, 330) + 'ms" role="button" tabindex="0" onclick="openEvent(\'' + escapeHtml(ev.id) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')openEvent(\'' + escapeHtml(ev.id) + '\')">' +
+            '<div class="event-date-block"><span class="day">' + day + '</span><span class="month">' + month + '</span><span class="time">' + time + '</span></div>' +
+            '<div class="event-copy"><div><h3 class="event-title">' + escapeHtml(ev.title) + '</h3><p class="event-description">' + description + '</p></div>' +
+            '<div class="event-meta"><span class="meta-pill">👥 ' + p + max + '</span><span class="price ' + pc + '">' + price + '</span>' + (isJoined ? '<span class="event-status">✓ Вы записаны</span>' : '') + '</div></div></div>';
+    }).join('');
+}
+
+function closeEventDetail() {
+    document.getElementById('eventDetailModal').classList.remove('show');
+    guestCount = 0;
+}
+
+// Вспомогательная функция для проверки ответа от вебхука
+function notifyUser(message) { if (tg?.showAlert) tg.showAlert(message); else if (typeof showToast === "function") showToast(message, "error"); else window.alert(message); }
+
+function isWebhookSuccess(response, expectedKey) {
+    response = parseWebhookValue(response);
+    if (webhookError(response)) return false;
+    if (response && typeof response === "object" && !Array.isArray(response)) {
+        if (response.error || response.errors) return false;
+        if (response.success === false || response.ok === false) return false;
+        if (response.success || response.ok || response.updated || response.joined || response.left || response.participant || response[expectedKey]) return true;
+    }
+    if (!response) return false;
+
+    // Прямой boolean true
+    if (response === true || response === 'true') return true;
+
+    // Объект с полем success / ok / updated
+    if (typeof response === 'object' && response !== null && !Array.isArray(response)) {
+        if (response.success || response.ok || response.updated || response[expectedKey]) return true;
+    }
+
+    // Самый частый ваш случай: массив с одним объектом
+    if (Array.isArray(response)) {
+        for (const item of response) {
+            if (item && typeof item === 'object') {
+                if (item[expectedKey] === true || item[expectedKey] === 'true') return true;
+                if (item.success === true || item.ok === true || item.updated === true || item.joined === true || item.left === true) return true;
+                const nested = webhookValue(item, [expectedKey]);
+                if (nested === true || nested === 'true') return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+window.openEvent = async (id) => {
+    document.querySelector(".social-actions")?.remove();
+    const ev = events.find(e => String(e.id) === String(id));
+    if (!ev) return;
+
+    currentEventId = id;
+    socialCurrentEvent = ev;
+    trackSocial("view", { event_id: id, referral_token: getReferralToken(id) });
+
+    const d = new Date(ev.event_date);
+    const fullDate = d.toLocaleDateString('ru-RU', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    const participants = Array.isArray(ev.participants) ? ev.participants : [];
+    const currentUserParticipant = participants.find(p => String(p?.id) === String(user?.id));
+    const isJoined = !!currentUserParticipant;
+
+    const initialGuestSlots = currentUserParticipant ? Number(currentUserParticipant.guest_slots || 0) : 0;
+    guestTotalBase = participants.reduce((sum, participant) => sum + Number(participant?.guest_slots || 0), 0);
+    guestCount = initialGuestSlots;
+
+    document.getElementById('detailTitle').textContent = ev.title;
+    document.getElementById('detailKicker').textContent = (ev.category || 'Событие') + ' · VKOR';
+    applyEventTheme(ev);
+    document.getElementById('detailDate').textContent = fullDate;
+    document.getElementById('detailInfo').innerHTML = `
+        <div class="event-date-card"><div class="event-date-day">${d.toLocaleDateString('ru-RU',{day:'2-digit'})}<small>${d.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</small></div><div class="event-date-copy">${d.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'})}<span>⏰ ${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
+        ${ev.description ? `<div class="event-description-block"><div class="event-section-label">О событии</div><div class="event-description-text">${ev.description.replace(/\n/g,'<br>')}</div></div>` : ''}
+        <div class="event-fact-grid"><div class="event-fact"><strong>👥 ${ev.participants_count || 0}${ev.max_participants ? ' / '+ev.max_participants : ''}</strong><span>Участники</span></div><div class="event-fact"><strong>${ev.price_rub > 0 ? ev.price_rub + ' ₽' : 'Бесплатно'}</strong><span>Стоимость</span></div></div>
+    `;
+
+    const avatarsContainer = document.getElementById('detailAvatars');
+    const noParticipants   = document.getElementById('noParticipants');
+    avatarsContainer.innerHTML = '';
+
+    if (participants.length === 0) {
+        noParticipants.style.display = 'block';
+        avatarsContainer.style.display = 'none';
+    } else {
+        noParticipants.style.display = 'none';
+        avatarsContainer.style.display = 'flex';
+        avatarsContainer.style.flexWrap = 'wrap';
+        avatarsContainer.style.gap = '20px';
+
+        participants.forEach(p => {
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.width = '72px';
+            wrapper.style.height = '96px';
+            wrapper.style.textAlign = 'center'; wrapper.style.cursor = 'pointer'; wrapper.title = 'Открыть профиль участника'; wrapper.onclick = () => openParticipantProfile(p);
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.style.cssText = 'width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f0f0f0;box-shadow:0 4px 12px rgba(0,0,0,0.1);';
+
+            if (p.photo_url || p.userpic) {
+                const img = document.createElement('img');
+                img.src = p.photo_url || p.userpic;
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                img.onerror = () => {
+                    img.remove();
+                    const initials = (p.first_name?.[0]||'') + (p.last_name?.[0]||'');
+                    const color = '#' + String(p.id || Math.random()).slice(-6).padStart(6,'0');
+                    const fb = document.createElement('div');
+                    fb.style.cssText = `width:100%;height:100%;background:${color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;`;
+                    fb.textContent = initials || '?';
+                    avatarDiv.appendChild(fb);
+                };
+                avatarDiv.appendChild(img);
+            } else {
+                const initials = (p.first_name?.[0]||'') + (p.last_name?.[0]||'');
+                const color = '#' + String(p.id || Math.random()).slice(-6).padStart(6,'0');
+                avatarDiv.style.background = color;
+                avatarDiv.style.color = 'white';
+                avatarDiv.style.display = 'flex';
+                avatarDiv.style.alignItems = 'center';
+                avatarDiv.style.justifyContent = 'center';
+                avatarDiv.style.fontWeight = '700';
+                avatarDiv.style.fontSize = '28px';
+                avatarDiv.textContent = initials || '?';
+            }
+            wrapper.appendChild(avatarDiv);
+
+            const gs = Number(p.guest_slots || 0);
+            if (gs > 0) {
+                const badge = document.createElement('div');
+                badge.style.cssText = `
+                    position:absolute; bottom:4px; left:50%; transform:translateX(-50%);
+                    background:var(--accent); color:white; font-size:12px; font-weight:600;
+                    padding:1px 8px; border-radius:10px; min-width:24px; text-align:center;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+                `;
+                badge.textContent = `+${gs}`;
+                wrapper.appendChild(badge);
+            }
+
+            avatarsContainer.appendChild(wrapper);
+        });
+    }
+
+    guestTotalBase = participants.reduce((sum, participant) => sum + Number(participant?.guest_slots || 0), 0);
+    const totalGuestsEl = document.getElementById('eventTotalGuests');
+    const myGuestsEl = document.getElementById('eventMyGuestCount');
+    const myGuestsButton = document.getElementById('eventMyGuests');
+    if (totalGuestsEl) totalGuestsEl.textContent = guestTotalBase;
+    if (myGuestsEl) myGuestsEl.textContent = guestCount;
+    if (myGuestsButton) myGuestsButton.style.display = guestCount > 0 ? 'inline-block' : 'none';
+
+    document.querySelector('.social-actions')?.remove();
+    document.querySelectorAll('.social-signal,.social-invite-note').forEach(node => node.remove());
+
+    const actionBtn = document.getElementById('detailActionBtn');
+    const maxParticipants = Number(ev.max_participants);
+    const isUnlimited = Number.isFinite(maxParticipants) && maxParticipants === 0;
+    const placesFree = isUnlimited ? null : (ev.available_places ?? ev.free_places ?? (ev.max_participants != null && maxParticipants > 0 ? Math.max(0, maxParticipants - Number(ev.participants_count || 0)) : null));
+    renderSocialActions(ev, isJoined, placesFree);
+    renderSocialStats(id);
+
+    let buttonText = 'Присоединиться';
+    let actionType = 'join';
+
+    if (isJoined) {
+        if (initialGuestSlots === 0) {
+            buttonText = 'Отписаться';
+            actionType = 'leave';
+        } else {
+            buttonText = 'Обновить гостей';
+            actionType = 'join';
+        }
+    }
+
+    actionBtn.textContent = buttonText;
+    const eventIsFull = !isJoined && placesFree !== null && placesFree <= 0;
+    actionBtn.disabled = eventIsFull;
+    actionBtn.classList.toggle("is-full", eventIsFull);
+    if (eventIsFull) actionBtn.textContent = "Мест нет";
+
+    actionBtn.onclick = async () => {
+        if (actionBtn.disabled) { notifyUser("В событии больше нет свободных мест"); return; }
+        let res;
+
+        if (actionType === 'leave') {
+            res = await api("events", "leave", { event_id: id, user_id: user?.id });
+            if (isWebhookSuccess(res, "leave_event")) {
+                tg.showAlert("Вы отписались от события");
+            } else {
+                tg.showAlert("Не удалось отписаться");
+                console.log("leave ответ:", res);
+            }
+        } else {
+            const payload = { event_id: id, user_id: user?.id, guests: guestCount, referral_token: getReferralToken(id) };
+            res = await api("events", "join", payload);
+            if (isWebhookSuccess(res, "join_event")) {
+                trackSocial("join", { event_id: id, event_date: ev.event_date, referral_token: getReferralToken(id), guests: guestCount });
+                if (isJoined) {
+                    tg.showAlert("Количество гостей обновлено");
+                } else {
+                    tg.showAlert("Вы записались!");
+                }
+            } else {
+                notifyUser(/недостаточно мест|свободно:s*0|нет свободных мест/i.test(String(res?.error || res?.message || "")) ? "В событии больше нет свободных мест" : (res?.error || res?.message || "Не удалось выполнить действие"));
+                console.log("join ответ:", res);
+            }
+        }
+
+        closeEventDetail();
+        await init();
+    };
+
+    document.getElementById('detailDeleteBtn').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('detailDeleteBtn').onclick = deleteEventConfirm;
+
+    document.getElementById('eventDetailModal').classList.add('show');
+};
+
+async function deleteEventConfirm() {
+    tg.showConfirm("Удалить событие навсегда?", async (ok) => {
+        if (ok && currentEventId) {
+            await api("events", "delete", { event_id: currentEventId });
+            tg.showAlert("Событие удалено");
+            closeEventDetail();
+            await init();
+        }
+    });
+}
+
+window.selectDate = function(dateStr) {
+    selectedDate = dateStr;
+    document.getElementById('dateChip').textContent = formatDateShort(dateStr);
+    closeDatePicker();
+    checkReady();
+};
+
+
+let profileSettings = {};
+function profileStorageKey(){ return 'eventhub_profile_' + String(user?.id || user?.login || 'guest'); }
+function getProfileSettings(){ try { return JSON.parse(localStorage.getItem(profileStorageKey()) || '{}'); } catch(e) { return {}; } }
+function initialsForProfile(){ return ((user?.first_name || '')[0] || '') + ((user?.last_name || '')[0] || '') || '?'; }
+function avatarMarkup(el, photo){ if(!el)return; el.innerHTML=''; if(photo){ const img=document.createElement('img'); img.src=photo; img.alt=''; img.onerror=()=>{el.textContent=initialsForProfile();}; el.appendChild(img); } else el.textContent=initialsForProfile(); }
+function profileRole(){ return authState !== 'ready' ? 'Не авторизован' : (userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь')); }
+function renderOwnerProfile(){
+  profileSettings=getProfileSettings();
+  const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя';
+  const display=profileSettings.display_name || tgName;
+  const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
+  const role=profileRole();
+  recordAuthTrace('profile_render', { auth_state: authState, is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role, user_keys: Object.keys(user || {}).filter(key => !['access_token'].includes(key)).slice(0, 30) });
+  if (authState !== 'ready') recordAuthTrace('profile_render_while_auth_pending', { auth_state: authState, display_role: role, user_id_present: Boolean(user?.id) });
+  if (authState === 'ready' && isAdmin !== userIsAdmin(user)) recordAuthTrace('role_mismatch', { is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role });
+  const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display;
+  const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle;
+  avatarMarkup(document.getElementById('ownerAvatar'),user?.photo_url);
+  const profileName=document.getElementById('profileTelegramName'); if(profileName)profileName.textContent=tgName;
+  const profileUsername=document.getElementById('profileTelegramUsername'); if(profileUsername)profileUsername.textContent=handle;
+  const profileFullName=document.getElementById('profileTelegramFullName'); if(profileFullName)profileFullName.value=tgName;
+  const profileHandle=document.getElementById('profileTelegramHandle'); if(profileHandle)profileHandle.value=handle;
+  const profileRoleInput=document.getElementById('profileRole'); if(profileRoleInput)profileRoleInput.value=role;
+  avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url);
+}
+function openSettings(){
+  renderOwnerProfile(); profileSettings=getProfileSettings(); const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя'; const handle=user?.username ? '@'+user.username : (user?.login || 'Не указан');
+  document.getElementById('profileTelegramName').textContent=tgName; document.getElementById('profileTelegramUsername').textContent=handle; document.getElementById('profileTelegramFullName').value=tgName; document.getElementById('profileTelegramHandle').value=handle; document.getElementById('profileRole').value=profileRole(); document.getElementById('profileDisplayName').value=profileSettings.display_name || ''; document.getElementById('profileContact').value=profileSettings.contact || ''; document.getElementById('profileBio').value=profileSettings.bio || ''; avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url); updateProfileThemeButtons(); document.getElementById('settingsScreen').classList.add('show');
+}
+function closeSettings(){ document.getElementById('settingsScreen').classList.remove('show'); }
+function setProfileTheme(theme){ localStorage.setItem('eventhub_theme',theme); applyTheme(theme); updateProfileThemeButtons(); }
+function updateProfileThemeButtons(){ const dark=document.documentElement.classList.contains('dark'); document.getElementById('settingsLightTheme')?.classList.toggle('active',!dark); document.getElementById('settingsDarkTheme')?.classList.toggle('active',dark); }
+function saveProfileSettings(){ profileSettings={display_name:document.getElementById('profileDisplayName').value.trim(),contact:document.getElementById('profileContact').value.trim(),bio:document.getElementById('profileBio').value.trim()}; localStorage.setItem(profileStorageKey(),JSON.stringify(profileSettings)); renderOwnerProfile(); closeSettings(); showToast('Настройки профиля сохранены','success'); }
+
+document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
+document.getElementById('authForm')?.addEventListener('submit', async (event) => { event.preventDefault(); const button = document.getElementById('authSubmit'); if (button) button.disabled = true; try { if (await authRequest(window.authMode || 'login')) await init(); } finally { if (button) button.disabled = false; } });
+document.getElementById('telegramLogin')?.addEventListener('click', async () => {
+  if (telegramAuthInFlight) return telegramAuthInFlight;
+  telegramAuthInFlight = (async () => {
+    const context = refreshTelegramContext();
+    if (!context.initData) { showAuthError('Откройте приложение внутри Telegram — данные Mini App ещё не получены.'); return; }
+    const button = document.getElementById('telegramLogin');
+    if (button) button.disabled = true;
+    accessToken = '';
+    sessionStorage.removeItem('eventhub_access_token');
+    showAuthError('');
+    try { await init(); } finally { if (button) button.disabled = false; }
+  })().finally(() => { telegramAuthInFlight = null; });
+  return telegramAuthInFlight;
+});
+document.getElementById('authLogout')?.addEventListener('click', async () => { if (accessToken) await api('auth', 'logout'); accessToken = ''; user = {}; isAdmin = false; try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {} syncAdminVisibility(); setAuthMode('login'); setAuthVisible(true); });
+setAuthMode('login');
+const storedTheme = (() => { try { return localStorage.getItem('eventhub_theme'); } catch (_) { return null; } })() || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+applyTheme(storedTheme);
+updateProfileThemeButtons();
+let telegramBootstrapAttempts = 0;
+let telegramBootstrapTimer = null;
+let telegramBootstrapStarted = false;
+async function bootstrapMiniApp() {
+  if (telegramBootstrapStarted) return;
+  const context = refreshTelegramContext();
+  if (telegramBootstrapAttempts === 0) recordAuthTrace('bootstrap_start', {
+    has_bridge: Boolean(window.Telegram?.WebApp),
+    has_signed_init_data: Boolean(context.initData),
+    has_telegram_user: Boolean(context.user?.id)
+  });
+  const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
+  // The unsafe Telegram user object may appear before the signed initData.
+  // Wait for the latter because it is the only value accepted for auth.
+  const hasTelegramContext = Boolean(telegramInitData);
+    if (telegramBootstrapAttempts === 1 || telegramBootstrapAttempts === 20) recordAuthTrace('bootstrap_wait', {
+      attempt: telegramBootstrapAttempts,
+      has_bridge: hasTelegramBridge,
+      has_signed_init_data: hasTelegramContext,
+      has_telegram_user: Boolean(user?.id)
+    });
+  if (hasTelegramBridge && !hasTelegramContext && telegramBootstrapAttempts < 40) {
+    telegramBootstrapAttempts += 1;
+    return;
+  }
+  if (hasTelegramBridge && !hasTelegramContext) {
+    // Do not send an auth request with an empty tg_init_data value. That can
+    authState = 'error';
+    recordAuthTrace('bootstrap_timeout', {
+      attempts: telegramBootstrapAttempts,
+      has_bridge: hasTelegramBridge,
+      has_signed_init_data: hasTelegramContext,
+      has_telegram_user: Boolean(user?.id)
+    });
+    // only produce a backend rejection and makes the client appear to loop.
+    renderOwnerProfile();
+    telegramBootstrapStarted = true;
+    showAuthError('Telegram не передал подписанные данные Mini App. Закройте окно и откройте приложение из Telegram ещё раз.');
+    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
+    return;
+  }
+  telegramBootstrapStarted = true;
+  try {
+    await init();
+  } catch (error) {
+    console.error('Mini App init failed', error);
+    showAuthError('Не удалось запустить приложение: ' + (error?.message || 'ошибка'));
+  } finally {
+    if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
+  }
+}
+telegramBootstrapTimer = setInterval(bootstrapMiniApp, 250);
+void bootstrapMiniApp();
+</script>
+<script>
+(() => {
+  const list = document.getElementById('eventsList');
+  if (!list) return;
+  const hero = document.querySelector('.header');
+  if (hero && !document.querySelector('.pulse-hero')) hero.insertAdjacentHTML('afterend', "\n<section class=\"pulse-hero\" aria-label=\"Обзор событий\"><div class=\"pulse-hero-kicker\">Event Pulse · сегодня</div><h2>Люди, идеи и поводы встретиться</h2><p>Выберите настроение, найдите событие и присоединяйтесь одним касанием.</p></section>\n<input id=\"pulseSearch\" class=\"pulse-search\" type=\"search\" placeholder=\"Поиск по событиям…\" aria-label=\"Поиск по событиям\">\n<div class=\"pulse-tools\" role=\"tablist\" aria-label=\"Фильтр событий\"><button class=\"pulse-chip active\" data-pulse-filter=\"all\">Все</button><button class=\"pulse-chip\" data-pulse-filter=\"soon\">Скоро</button><button class=\"pulse-chip\" data-pulse-filter=\"free\">Бесплатно</button><button class=\"pulse-chip\" data-pulse-filter=\"joined\">Я участвую</button></div>\n");
+  document.body.insertAdjacentHTML('beforeend','<nav class="pulse-bottom-nav" aria-label="Основная навигация"><button class="active" data-pulse-nav="events"><span class="pulse-nav-icon">✦</span>События</button><button data-pulse-nav="saved"><span class="pulse-nav-icon">♡</span>Избранное</button><button class="organizer-dashboard-nav hidden" data-pulse-nav="organizer" onclick="openOrganizerDashboard()"><span class="pulse-nav-icon">▥</span>Аналитика</button><button data-pulse-nav="profile" onclick="openSettings()"><span class="pulse-nav-icon">◉</span>Профиль</button></nav><div id="pulseToast" class="pulse-toast" role="status"></div>');
+  let filter = 'all', query = '';
+  const favorites = new Set(JSON.parse(localStorage.getItem('eventhub_favorites') || '[]'));
+  const liked = new Set(JSON.parse(localStorage.getItem('eventhub_likes') || '[]'));
+  const toast = (message) => { const el=document.getElementById('pulseToast'); if(!el)return; el.textContent=message; el.classList.add('show'); clearTimeout(window.__pulseToast); window.__pulseToast=setTimeout(()=>el.classList.remove('show'),1800); };
+  const syncModalState = () => { const open = [...document.querySelectorAll('.datetime-modal.show,.picker-overlay.show,.settings-screen.show')].length > 0; document.body.classList.toggle('pulse-modal-open', open); };
+  new MutationObserver(syncModalState).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+  syncModalState();
+  const sync = () => { localStorage.setItem('eventhub_favorites', JSON.stringify([...favorites])); localStorage.setItem('eventhub_likes', JSON.stringify([...liked])); };
+  const decorate = () => {
+    list.querySelectorAll('.event-card').forEach(card => {
+      if (card.dataset.pulseReady) return;
+      card.dataset.pulseReady='1'; const title=card.querySelector('.event-title')?.textContent||''; const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1] || title;
+      const media=document.createElement('div'); media.className='pulse-media'; media.innerHTML='<span>✦ подборка события</span>'; const copy=card.querySelector('.event-copy'); if(copy) copy.prepend(media);
+      const tools=document.createElement('div'); tools.className='pulse-card-tools'; tools.innerHTML='<button class="pulse-card-tool" data-pulse-action="like">♡ Нравится</button><button class="pulse-card-tool" data-pulse-action="save">☆ Сохранить</button><button class="pulse-card-tool" data-pulse-action="calendar">🗓 В календарь</button>'; copy?.appendChild(tools);
+      tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='calendar'){const ev=events.find(item=>String(item.id)===String(id)); if(ev) addEventToCalendar(ev);} sync(); });
+      if(liked.has(id)){tools.children[0].classList.add('is-liked');tools.children[0].textContent='♥ Лайк';} if(favorites.has(id)){tools.children[1].classList.add('is-liked');tools.children[1].textContent='★ Сохранено';}
+    });
+    list.querySelectorAll('.event-card').forEach(card=>{const title=(card.querySelector('.event-title')?.textContent||'').toLowerCase();const joined=card.textContent.includes('Вы записаны');const free=card.textContent.toLowerCase().includes('бесплатно');const visible=(!query||title.includes(query))&&(filter==='all'||(filter==='joined'&&joined)||(filter==='free'&&free)||(filter==='soon'&&card.querySelector('.event-date-block')));card.style.display=visible?'':'none';});
+  };
+  new MutationObserver(decorate).observe(list,{childList:true,subtree:true});
+  document.addEventListener('input',e=>{if(e.target.id==='pulseSearch'){query=e.target.value.trim().toLowerCase();decorate();}});
+  document.addEventListener('click',e=>{const chip=e.target.closest('[data-pulse-filter]');if(chip){filter=chip.dataset.pulseFilter;document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.toggle('active',x===chip));decorate();}const nav=e.target.closest('[data-pulse-nav]');if(nav&&nav.dataset.pulseNav==='saved'){filter='saved';document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.remove('active'));list.querySelectorAll('.event-card').forEach(card=>{const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1]||'';card.style.display=favorites.has(id)?'':'none';});toast('Показаны сохранённые события');}});
+  setTimeout(decorate, 250);
+})();
+</script><script>
+(function(){
+  const SOCIAL_API='https://n8n.arima.ru/webhook/eventhub-social-api-7a9d2f';
+  function dashboardStats(eventId){
+    return fetch(SOCIAL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stats',event_id:eventId,auth:{tg_init_data:tg?.initData||'',user}})})
+      .then(r=>r.text()).then(raw=>{const data=raw?JSON.parse(raw):{};return Array.isArray(data)?(data[0]||{}):(data.result||data||{});}).catch(()=>({}));
+  }
+  function metric(value,label){const el=document.createElement('span');el.className='organizer-event-metric';el.textContent=label+': '+Number(value||0);return el;}
+  async function loadOrganizerDashboard(){
+    const root=document.getElementById('organizerDashboard'); if(!root)return;
+    const list=root.querySelector('.organizer-dashboard-list'); const summary=root.querySelector('.organizer-dashboard-summary');
+    list.innerHTML='<div class="organizer-dashboard-loading">Загружаем статистику…</div>'; summary.innerHTML='';
+    const ownEvents=Array.isArray(events)?events.filter(ev=>ev && ev.id):[];
+    const rows=await Promise.all(ownEvents.map(async ev=>({ev,stats:await dashboardStats(ev.id)})));
+    const total=rows.reduce((acc,row)=>{for(const key of ['views','shares','joins','referral_joins'])acc[key]+=Number(row.stats?.[key]||0);return acc},{views:0,shares:0,joins:0,referral_joins:0});
+    [['views','Просмотры'],['shares','Поделились'],['joins','Регистрации'],['referral_joins','По приглашению']].forEach(([key,label])=>{const el=document.createElement('div');el.className='organizer-dashboard-total';el.innerHTML='<strong>'+total[key]+'</strong><span>'+label+'</span>';summary.appendChild(el);});
+    list.innerHTML='';
+    if(!rows.length){list.innerHTML='<div class="organizer-dashboard-empty">Пока нет событий для аналитики</div>';return;}
+    rows.sort((a,b)=>Number(b.stats?.referral_joins||0)-Number(a.stats?.referral_joins||0));
+    rows.forEach(({ev,stats})=>{const row=document.createElement('div');row.className='organizer-event-row';const info=document.createElement('div');const name=document.createElement('div');name.className='organizer-event-name';name.textContent=ev.title||'Без названия';const date=document.createElement('div');date.className='organizer-event-date';date.textContent=ev.event_date?new Date(ev.event_date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';const open=document.createElement('button');open.className='organizer-event-open';open.type='button';open.textContent='Открыть событие';open.onclick=()=>{window.closeOrganizerDashboard?.();window.openEvent(ev.id);};info.append(name,date,open);const metrics=document.createElement('div');metrics.className='organizer-event-metrics';metrics.append(metric(stats.views,'Просм.'),metric(stats.shares,'Шары'),metric(stats.joins,'Записи'),metric(stats.referral_joins,'Реф.'));row.append(info,metrics);list.appendChild(row);});
+  }
+  window.openOrganizerDashboard=function(){if(!isAdmin)return;const root=document.getElementById('organizerDashboard');if(!root)return;root.classList.add('show');document.body.classList.add('pulse-modal-open');loadOrganizerDashboard();};
+  window.closeOrganizerDashboard=function(){document.getElementById('organizerDashboard')?.classList.remove('show');document.body.classList.remove('pulse-modal-open');document.querySelectorAll('[data-pulse-nav]').forEach(x=>x.classList.toggle('active',x.dataset.pulseNav==='events'));};
+  const syncOrganizerNav=()=>{document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);};
+  const mountDashboard=()=>{
+    if(document.getElementById('organizerDashboard'))return true;
+    const hero=document.querySelector('.pulse-hero')||document.querySelector('.header');
+    if(!hero)return false;
+    hero.insertAdjacentHTML('afterend','<button id="organizerDashboardButton" class="organizer-dashboard-button" type="button" onclick="openOrganizerDashboard()">Панель организатора · аналитика</button><section id="organizerDashboard" class="organizer-dashboard"><div class="organizer-dashboard-head"><div class="organizer-dashboard-title">Мои события</div><button class="organizer-dashboard-close" type="button" onclick="closeOrganizerDashboard()">Закрыть</button></div><div class="organizer-dashboard-summary"></div><div class="organizer-dashboard-list"></div></section>');
+    return true;
+  };
+  const syncVisibility=()=>{const button=document.getElementById('organizerDashboardButton');if(button)button.style.display=isAdmin?'block':'none';};
+  const tryMount=()=>{if(mountDashboard())syncVisibility();};
+  tryMount();
+  syncOrganizerNav();
+  document.addEventListener('DOMContentLoaded',tryMount,{once:false});
+  const mountObserver=new MutationObserver(tryMount); mountObserver.observe(document.body,{childList:true,subtree:true});
+  const visibilityTimer=setInterval(()=>{tryMount();syncVisibility();syncOrganizerNav();if(isAdmin&&document.getElementById('organizerDashboard'))clearInterval(visibilityTimer);},250);
+})();
+</script></body>
+</html>
