@@ -609,6 +609,7 @@ let user = tg?.initDataUnsafe?.user || {};
 let accessToken = (() => { try { return sessionStorage.getItem('eventhub_access_token') || ''; } catch (_) { return ''; } })();
 let telegramAuthInFlight = null;
 let appInitInFlight = null;
+let authState = 'pending';
 
 function refreshTelegramContext() {
     const webApp = window.Telegram?.WebApp;
@@ -681,6 +682,13 @@ async function api(entity, action, data = {}) {
         const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
         const raw = await res.text();
         const parsed = parseWebhookValue(raw);
+        if (entity === 'auth') recordAuthTrace('webhook_response', {
+          action,
+          http_status: res.status,
+          ok: res.ok,
+          shape: webhookShape(parsed),
+          error: webhookError(parsed) || null
+        });
         if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
         if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true, http_status: res.status };
         if (webhookError(parsed)) return { success: false, error: webhookError(parsed), http_status: res.status, webhook_response: parsed };
@@ -994,6 +1002,18 @@ function showAuthError(message) { const error = document.getElementById('authErr
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
+function webhookShape(value, depth = 0) {
+  if (depth > 3 || value === null || value === undefined) return value === null ? 'null' : 'undefined';
+  if (Array.isArray(value)) return { type: 'array', length: value.length, items: value.slice(0, 3).map(item => webhookShape(item, depth + 1)) };
+  if (typeof value === 'object') return { type: 'object', keys: Object.keys(value).slice(0, 30), nested: Object.fromEntries(Object.keys(value).filter(key => ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'permissions'].includes(key)).slice(0, 8).map(key => [key, webhookShape(value[key], depth + 1)])) };
+  return typeof value;
+}
+function recordAuthTrace(event, details = {}) {
+  const entry = { at: new Date().toISOString(), event, ...details };
+  window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-30);
+  try { localStorage.setItem('eventhub_auth_debug', JSON.stringify(window.__eventhubAuthDebug)); } catch (_) {}
+  if (typeof console !== 'undefined' && console.info) console.info('[EventHub auth]', entry);
+}
 function parseWebhookValue(value, depth = 0) {
   if (depth > 4 || value === null || value === undefined) return value;
   if (typeof value !== 'string') return value;
@@ -1031,7 +1051,7 @@ function authUserFromResponse(response) {
     return null;
   }
   if (!response || typeof response !== 'object' || webhookError(response)) return null;
-  const accountKeys = ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'role', 'user_role', 'userRole'];
+  const accountKeys = ['id', 'user_id', 'telegram_id', 'username', 'first_name', 'last_name', 'photo_url', 'access_token', 'is_admin', 'isAdmin', 'admin', 'isAdministrator', 'role', 'role_name', 'user_role', 'userRole'];
   const account = {};
   for (const key of accountKeys) {
     if (response[key] !== undefined) account[key] = response[key];
@@ -1039,11 +1059,22 @@ function authUserFromResponse(response) {
   for (const key of ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'auth_user', 'telegram_user', 'profile', 'permissions', 'rows', 'items']) {
     if (response[key] !== undefined) {
       const nested = authUserFromResponse(response[key]);
-      if (nested) return { ...account, ...nested };
+      if (nested) return normalizeAuthAccount({ ...account, ...nested });
     }
   }
-  if (Object.keys(account).length) return account;
+  if (Object.keys(account).length) return normalizeAuthAccount(account);
   return null;
+}
+function normalizeAuthAccount(account) {
+  if (!account || typeof account !== 'object') return account;
+  const permissions = account.permissions && typeof account.permissions === 'object' ? account.permissions : {};
+  const rawRole = account.role ?? account.user_role ?? account.userRole ?? account.role_name ?? permissions.role ?? permissions.user_role;
+  const rawAdmin = account.is_admin ?? account.isAdmin ?? account.admin ?? account.isAdministrator ?? permissions.is_admin ?? permissions.isAdmin ?? permissions.admin;
+  const normalized = { ...account };
+  if (rawRole !== undefined && rawRole !== null && rawRole !== '') normalized.role = String(rawRole);
+  if (rawAdmin !== undefined && rawAdmin !== null) normalized.is_admin = truthyFlag(rawAdmin);
+  if (normalized.id === undefined && normalized.user_id !== undefined) normalized.id = normalized.user_id;
+  return normalized;
 }
 function webhookValue(response, keys = []) {
   response = parseWebhookValue(response);
@@ -1087,9 +1118,12 @@ function truthyFlag(value) {
 }
 function userIsAdmin(account) {
   if (!account || typeof account !== 'object') return false;
-  return truthyFlag(account.is_admin) || truthyFlag(account.isAdmin) ||
+  const permissions = account.permissions && typeof account.permissions === 'object' ? account.permissions : {};
+  return truthyFlag(account.is_admin) || truthyFlag(account.isAdmin) || truthyFlag(account.admin) || truthyFlag(account.isAdministrator) ||
     ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role ?? '').trim().toLowerCase()) ||
-    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? account.userRole ?? '').trim().toLowerCase());
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.role_name ?? '').trim().toLowerCase()) ||
+    ['admin', 'administrator', 'owner', 'organizer'].includes(String(account.user_role ?? account.userRole ?? permissions.role ?? permissions.user_role ?? '').trim().toLowerCase()) ||
+    truthyFlag(permissions.is_admin) || truthyFlag(permissions.isAdmin) || truthyFlag(permissions.admin);
 }
 function syncAdminVisibility() {
   const visible = Boolean(isAdmin);
@@ -1103,26 +1137,26 @@ async function init(forceTelegramMode = false) {
       const telegramContext = refreshTelegramContext();
       const hasValidTelegramAuth = Boolean(telegramContext.initData);
       const openedInTelegram = hasValidTelegramAuth;
-      if (telegramContext.user?.id) renderOwnerProfile();
+      authState = 'checking';
+      recordAuthTrace('auth_start', { has_signed_init_data: hasValidTelegramAuth, has_telegram_user: Boolean(telegramContext.user?.id), has_session_token: Boolean(accessToken) });
       // Не показываем форму во время автоматической Telegram-авторизации.
       // Для прямой ссылки форма появится ниже только после завершения проверки.
       setAuthVisible(false);
       captureReferral();
       showSkeleton();
-      // Validate the cached access-token session first, matching the working
-      // n8n Webhook flow. Use Telegram validation only when no valid session
-      // exists, so the two backend auth branches do not get mixed.
-      let authRes = accessToken ? await api('auth', 'validate_session') : null;
+      // Validate the current Telegram identity first. A cached session is used
+      // only for direct browser openings, so an older role cannot win.
+      // In Telegram, the current signed initData is authoritative. A cached
+      // session may contain an older role and must not mask Telegram validate.
+      let authRes = hasValidTelegramAuth ? await api('auth', 'validate') : (accessToken ? await api('auth', 'validate_session') : null);
       let authenticatedUser = authUserFromResponse(authRes);
-      if (!authenticatedUser && accessToken) {
+      if (!authenticatedUser && accessToken && !hasValidTelegramAuth) {
           accessToken = '';
           try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
       }
-      if (!authenticatedUser && hasValidTelegramAuth) {
-          authRes = await api('auth', 'validate');
-          authenticatedUser = authUserFromResponse(authRes);
-      }
       if (!authenticatedUser) {
+        authState = 'error';
+        recordAuthTrace('auth_failed', { opened_in_telegram: openedInTelegram, response_shape: webhookShape(authRes), response_error: webhookError(authRes) || null });
         // В Telegram Mini App не переключаемся на логин/пароль: Telegram должен
         // авторизовать пользователя автоматически. Форма предназначена только
         // для обычного открытия страницы по прямой ссылке.
@@ -1133,11 +1167,14 @@ async function init(forceTelegramMode = false) {
       // Keep Telegram identity, but let the server's validated account win for
       // id/role/flags.  The webhook may return user_id instead of id.
       user = { ...user, ...authenticatedUser, id: authenticatedUser.id ?? authenticatedUser.user_id ?? user.id };
+      user = normalizeAuthAccount(user);
       if (authenticatedUser.access_token) {
         accessToken = String(authenticatedUser.access_token);
         try { sessionStorage.setItem('eventhub_access_token', accessToken); } catch (_) {}
       }
-      isAdmin = userIsAdmin(authenticatedUser);
+      isAdmin = userIsAdmin(user);
+      authState = 'ready';
+      recordAuthTrace('auth_success', { user_id_present: Boolean(user?.id), is_admin: isAdmin, role: user?.role || user?.user_role || null, response_shape: webhookShape(authRes) });
       setAuthVisible(false);
       renderOwnerProfile();
       syncAdminVisibility();
@@ -1472,7 +1509,6 @@ let telegramBootstrapStarted = false;
 async function bootstrapMiniApp() {
   if (telegramBootstrapStarted) return;
   refreshTelegramContext();
-  if (user?.id) renderOwnerProfile();
   const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
   // The unsafe Telegram user object may appear before the signed initData.
   // Wait for the latter because it is the only value accepted for auth.
