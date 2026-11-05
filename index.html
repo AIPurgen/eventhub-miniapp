@@ -665,6 +665,8 @@ function formatDateShort(dateStr) {
 }
 
 async function api(entity, action, data = {}) {
+    const requestId = 'auth-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const requestStartedAt = Date.now();
     try {
         const context = refreshTelegramContext();
         const currentInitData = context.initData;
@@ -680,19 +682,40 @@ async function api(entity, action, data = {}) {
           ? { tg_init_data: currentInitData, user: currentUser }
           : { access_token: accessToken, user: currentUser };
         if (entity === 'auth') recordAuthTrace('auth_request', {
+          request_id: requestId,
           action,
           auth_mode: useTelegramAuth ? 'telegram_init_data' : (accessToken ? 'access_token' : 'empty_auth'),
           has_signed_init_data: Boolean(currentInitData),
           telegram_user_id_present: Boolean(currentUser?.id),
           request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
         });
-        const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }) });
+        if (entity === 'auth') recordAuthTrace('fetch_start', { request_id: requestId, action });
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        const timeout = setTimeout(() => controller?.abort(), 15000);
+        let res;
+        try {
+          res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }), signal: controller?.signal });
+        } catch (error) {
+          const timedOut = error?.name === 'AbortError';
+          if (entity === 'auth') recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
+            request_id: requestId,
+            action,
+            elapsed_ms: Date.now() - requestStartedAt,
+            error_name: error?.name || 'Error',
+            error_message: String(error?.message || 'fetch failed').slice(0, 160)
+          });
+          throw error;
+        } finally {
+          clearTimeout(timeout);
+        }
         const raw = await res.text();
         const parsed = parseWebhookValue(raw);
         if (entity === 'auth') recordAuthTrace('webhook_response', {
+          request_id: requestId,
           action,
           http_status: res.status,
           ok: res.ok,
+          elapsed_ms: Date.now() - requestStartedAt,
           raw_length: raw.length,
           raw_prefix: raw.slice(0, 80).replace(/[\r\n\t]/g, ' '),
           shape: webhookShape(parsed),
@@ -704,6 +727,7 @@ async function api(entity, action, data = {}) {
         return parsed;
     } catch (e) {
         console.error(e);
+      if (entity === 'auth' && e?.name !== 'AbortError') recordAuthTrace('auth_request_exception', { request_id: requestId, action, elapsed_ms: Date.now() - requestStartedAt, error_name: e?.name || 'Error' });
         const error = document.getElementById('authError');
         if (error) error.textContent = "Нет связи с сервером";
         return { success: false, error: "Нет связи с сервером" };
@@ -1026,7 +1050,7 @@ function recordAuthTrace(event, details = {}) {
 function copyAuthTrace() {
   const trace = JSON.stringify({
     generated_at: new Date().toISOString(),
-    url: location.href.split('?')[0],
+    url: location.origin + location.pathname,
     auth_state: authState,
     trace: window.__eventhubAuthDebug || []
   }, null, 2);
@@ -1498,6 +1522,7 @@ function renderOwnerProfile(){
   const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
   const role=userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
   recordAuthTrace('profile_render', { auth_state: authState, is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role, user_keys: Object.keys(user || {}).filter(key => !['access_token'].includes(key)).slice(0, 30) });
+  if (authState !== 'ready') recordAuthTrace('profile_render_while_auth_pending', { auth_state: authState, display_role: role, user_id_present: Boolean(user?.id) });
   if (authState === 'ready' && isAdmin !== userIsAdmin(user)) recordAuthTrace('role_mismatch', { is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role });
   const ownerName=document.getElementById('ownerName'); if(ownerName)ownerName.textContent=display;
   const ownerUsername=document.getElementById('ownerUsername'); if(ownerUsername)ownerUsername.textContent=handle;
