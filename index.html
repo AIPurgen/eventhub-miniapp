@@ -690,6 +690,12 @@ async function api(entity, action, data = {}) {
           request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
         });
         if (entity === 'auth') recordAuthTrace('fetch_start', { request_id: requestId, action });
+        if (entity === 'auth') recordAuthTrace('network_context', {
+          origin: location.origin,
+          online: navigator.onLine,
+          user_agent: navigator.userAgent.slice(0, 180),
+          api_host: (() => { try { return new URL(API_URL).host; } catch (_) { return ''; } })()
+        });
         const maxAttempts = entity === 'auth' && action === 'validate' ? 2 : 1;
         let res;
         let lastError;
@@ -697,7 +703,16 @@ async function api(entity, action, data = {}) {
           const controller = typeof AbortController === 'function' ? new AbortController() : null;
           const timeout = setTimeout(() => controller?.abort(), 15000);
           try {
-            res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }), signal: controller?.signal });
+            res = await fetch(API_URL, {
+              method: "POST",
+              mode: "cors",
+              credentials: "omit",
+              cache: "no-store",
+              referrerPolicy: "no-referrer",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({ entity, action, data, auth }),
+              signal: controller?.signal
+            });
             break;
           } catch (error) {
             lastError = error;
