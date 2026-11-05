@@ -690,24 +690,37 @@ async function api(entity, action, data = {}) {
           request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
         });
         if (entity === 'auth') recordAuthTrace('fetch_start', { request_id: requestId, action });
-        const controller = typeof AbortController === 'function' ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 15000);
+        const maxAttempts = entity === 'auth' && action === 'validate' ? 2 : 1;
         let res;
-        try {
-          res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }), signal: controller?.signal });
-        } catch (error) {
-          const timedOut = error?.name === 'AbortError';
-          if (entity === 'auth') recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
-            request_id: requestId,
-            action,
-            elapsed_ms: Date.now() - requestStartedAt,
-            error_name: error?.name || 'Error',
-            error_message: String(error?.message || 'fetch failed').slice(0, 160)
-          });
-          throw error;
-        } finally {
-          clearTimeout(timeout);
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const controller = typeof AbortController === 'function' ? new AbortController() : null;
+          const timeout = setTimeout(() => controller?.abort(), 15000);
+          try {
+            res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, action, data, auth }), signal: controller?.signal });
+            break;
+          } catch (error) {
+            lastError = error;
+            const timedOut = error?.name === 'AbortError';
+            if (entity === 'auth') recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
+              request_id: requestId,
+              action,
+              attempt,
+              max_attempts: maxAttempts,
+              elapsed_ms: Date.now() - requestStartedAt,
+              error_name: error?.name || 'Error',
+              error_message: String(error?.message || 'fetch failed').slice(0, 160)
+            });
+            if (attempt < maxAttempts) {
+              if (entity === 'auth') recordAuthTrace('auth_retry', { request_id: requestId, action, attempt: attempt + 1, reason: timedOut ? 'timeout' : 'network_error' });
+              await new Promise(resolve => setTimeout(resolve, 400));
+              continue;
+            }
+          } finally {
+            clearTimeout(timeout);
+          }
         }
+        if (!res) throw lastError || new Error('fetch failed');
         const raw = await res.text();
         const parsed = parseWebhookValue(raw);
         if (entity === 'auth') recordAuthTrace('webhook_response', {
@@ -1514,13 +1527,13 @@ function profileStorageKey(){ return 'eventhub_profile_' + String(user?.id || us
 function getProfileSettings(){ try { return JSON.parse(localStorage.getItem(profileStorageKey()) || '{}'); } catch(e) { return {}; } }
 function initialsForProfile(){ return ((user?.first_name || '')[0] || '') + ((user?.last_name || '')[0] || '') || '?'; }
 function avatarMarkup(el, photo){ if(!el)return; el.innerHTML=''; if(photo){ const img=document.createElement('img'); img.src=photo; img.alt=''; img.onerror=()=>{el.textContent=initialsForProfile();}; el.appendChild(img); } else el.textContent=initialsForProfile(); }
-function profileRole(){ return userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь'); }
+function profileRole(){ return authState !== 'ready' ? 'Не авторизован' : (userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь')); }
 function renderOwnerProfile(){
   profileSettings=getProfileSettings();
   const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя';
   const display=profileSettings.display_name || tgName;
   const handle=user?.username ? '@'+user.username : (user?.login ? user.login : 'Telegram-профиль');
-  const role=userIsAdmin(user) ? 'Администратор' : (user?.role || user?.user_role || 'Пользователь');
+  const role=profileRole();
   recordAuthTrace('profile_render', { auth_state: authState, is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role, user_keys: Object.keys(user || {}).filter(key => !['access_token'].includes(key)).slice(0, 30) });
   if (authState !== 'ready') recordAuthTrace('profile_render_while_auth_pending', { auth_state: authState, display_role: role, user_id_present: Boolean(user?.id) });
   if (authState === 'ready' && isAdmin !== userIsAdmin(user)) recordAuthTrace('role_mismatch', { is_admin_state: Boolean(isAdmin), user_is_admin: userIsAdmin(user), display_role: role });
