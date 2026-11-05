@@ -710,7 +710,13 @@ async function api(entity, action, data = {}) {
               cache: "no-store",
               referrerPolicy: "no-referrer",
               headers: { "Content-Type": "application/json", "Accept": "application/json" },
-              body: JSON.stringify({ entity, action, data, auth }),
+              body: JSON.stringify({
+                meta: { request_id: requestId },
+                entity,
+                action,
+                data,
+                auth
+              }),
               signal: controller?.signal
             });
             break;
