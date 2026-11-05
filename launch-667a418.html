@@ -1597,18 +1597,37 @@ let telegramBootstrapTimer = null;
 let telegramBootstrapStarted = false;
 async function bootstrapMiniApp() {
   if (telegramBootstrapStarted) return;
-  refreshTelegramContext();
+  const context = refreshTelegramContext();
+  if (telegramBootstrapAttempts === 0) recordAuthTrace('bootstrap_start', {
+    has_bridge: Boolean(window.Telegram?.WebApp),
+    has_signed_init_data: Boolean(context.initData),
+    has_telegram_user: Boolean(context.user?.id)
+  });
   const hasTelegramBridge = Boolean(window.Telegram?.WebApp);
   // The unsafe Telegram user object may appear before the signed initData.
   // Wait for the latter because it is the only value accepted for auth.
   const hasTelegramContext = Boolean(telegramInitData);
+    if (telegramBootstrapAttempts === 1 || telegramBootstrapAttempts === 20) recordAuthTrace('bootstrap_wait', {
+      attempt: telegramBootstrapAttempts,
+      has_bridge: hasTelegramBridge,
+      has_signed_init_data: hasTelegramContext,
+      has_telegram_user: Boolean(user?.id)
+    });
   if (hasTelegramBridge && !hasTelegramContext && telegramBootstrapAttempts < 40) {
     telegramBootstrapAttempts += 1;
     return;
   }
   if (hasTelegramBridge && !hasTelegramContext) {
     // Do not send an auth request with an empty tg_init_data value. That can
+    authState = 'error';
+    recordAuthTrace('bootstrap_timeout', {
+      attempts: telegramBootstrapAttempts,
+      has_bridge: hasTelegramBridge,
+      has_signed_init_data: hasTelegramContext,
+      has_telegram_user: Boolean(user?.id)
+    });
     // only produce a backend rejection and makes the client appear to loop.
+    renderOwnerProfile();
     telegramBootstrapStarted = true;
     showAuthError('Telegram не передал подписанные данные Mini App. Закройте окно и откройте приложение из Telegram ещё раз.');
     if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
