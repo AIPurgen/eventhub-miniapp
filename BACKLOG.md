@@ -39,6 +39,7 @@
 - [x] Inline JavaScript проходит `node --check` после извлечения из HTML.
 - [x] Parser mock-проверки проходят для двойного JSON, n8n envelopes, вложенных collections, error responses и action boolean.
 - [x] Mini App trace фиксирует фактический webhook body, HTTP status, response headers, parsed shape и ошибки чтения/парсинга для каждого API-вызова.
+- [x] Mini App имеет независимый 10-секундный fetch watchdog и фиксирует зависание как `fetch_watchdog_timeout`.
 
 ## Ограничения, требующие ручной проверки в Telegram
 

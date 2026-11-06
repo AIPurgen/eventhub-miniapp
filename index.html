@@ -705,29 +705,48 @@ async function api(entity, action, data = {}) {
         let lastError;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const controller = typeof AbortController === 'function' ? new AbortController() : null;
-          const timeout = setTimeout(() => controller?.abort(), 15000);
+          const timeoutMs = 10000;
+          const timeout = setTimeout(() => controller?.abort(), timeoutMs);
+          let watchdog;
           try {
-            res = await fetch(API_URL, {
+            const requestBody = JSON.stringify({
+              meta: { request_id: requestId },
+              entity,
+              action,
+              data,
+              auth
+            });
+            recordAuthTrace('request_dispatch', {
+              request_id: requestId,
+              entity,
+              action,
+              body_length: requestBody.length,
+              timeout_ms: timeoutMs
+            });
+            const fetchPromise = fetch(API_URL, {
               method: "POST",
               mode: "cors",
               credentials: "omit",
               cache: "no-store",
               referrerPolicy: "no-referrer",
               headers: { "Content-Type": "application/json", "Accept": "application/json" },
-              body: JSON.stringify({
-                meta: { request_id: requestId },
-                entity,
-                action,
-                data,
-                auth
-              }),
+              body: requestBody,
               signal: controller?.signal
             });
+            const watchdogPromise = new Promise((_, reject) => {
+              watchdog = setTimeout(() => {
+                const error = new Error('fetch watchdog timeout');
+                error.name = 'WatchdogTimeoutError';
+                reject(error);
+              }, timeoutMs);
+            });
+            res = await Promise.race([fetchPromise, watchdogPromise]);
             break;
           } catch (error) {
             lastError = error;
             const timedOut = error?.name === 'AbortError';
-            recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
+            const watchdogTimedOut = error?.name === 'WatchdogTimeoutError';
+            recordAuthTrace(watchdogTimedOut ? 'fetch_watchdog_timeout' : (timedOut ? 'fetch_timeout' : 'fetch_error'), {
               request_id: requestId,
               entity,
               action,
@@ -735,7 +754,8 @@ async function api(entity, action, data = {}) {
               max_attempts: maxAttempts,
               elapsed_ms: Date.now() - requestStartedAt,
               error_name: error?.name || 'Error',
-              error_message: String(error?.message || 'fetch failed').slice(0, 160)
+              error_message: String(error?.message || 'fetch failed').slice(0, 160),
+              response_received: Boolean(res)
             });
             if (attempt < maxAttempts) {
               if (entity === 'auth') recordAuthTrace('auth_retry', { request_id: requestId, entity, action, attempt: attempt + 1, reason: timedOut ? 'timeout' : 'network_error' });
@@ -744,6 +764,7 @@ async function api(entity, action, data = {}) {
             }
           } finally {
             clearTimeout(timeout);
+            if (watchdog) clearTimeout(watchdog);
           }
         }
         if (!res) throw lastError || new Error('fetch failed');

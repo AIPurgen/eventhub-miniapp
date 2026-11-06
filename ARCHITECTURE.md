@@ -324,7 +324,7 @@ Frontend записывает диагностический trace для **ка
 - `http_response_received` — HTTP status, `ok`, redirect URL и доступные response headers;
 - `response_body_read_error` — ошибка чтения body, если HTTP-ответ получен, но body не прочитан;
 - `webhook_response` — фактический body ответа после `response.text()`, его размер, parsed shape и ошибка нормализации;
-- `fetch_timeout`, `fetch_error`, `api_request_exception` — сбои до получения/обработки ответа.
+- `fetch_watchdog_timeout`, `fetch_timeout`, `fetch_error`, `api_request_exception` — сбои до получения/обработки ответа. Независимый watchdog завершает зависший fetch через 10 секунд, чтобы auth не оставался в состоянии `checking`.
 
 Диагностика хранится в `localStorage` под ключом `eventhub_auth_debug`, последние 100 событий доступны в `window.__eventhubAuthDebug`. В профиле кнопка `Скопировать диагностику webhook` копирует JSON trace. Все записи коррелируются по `request_id`, который также передается в POST body как `meta.request_id`.
 
