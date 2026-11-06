@@ -315,6 +315,21 @@ git -C C:\Downloads\123\LK_Client\github-pages push origin main
 8. Корректно ли обрабатываются JSON-string, двойной JSON и массивы `[{json: {...}}]`.
 9. Не используется ли старый session token из `sessionStorage`.
 
+### Trace фактического webhook-ответа
+
+Frontend записывает диагностический trace для **каждого** вызова `api(entity, action)`, а не только для auth:
+
+- `api_request` — entity/action и correlation `request_id` перед отправкой;
+- `fetch_start` и `network_context` — начало запроса и сетевой контекст;
+- `http_response_received` — HTTP status, `ok`, redirect URL и доступные response headers;
+- `response_body_read_error` — ошибка чтения body, если HTTP-ответ получен, но body не прочитан;
+- `webhook_response` — фактический body ответа после `response.text()`, его размер, parsed shape и ошибка нормализации;
+- `fetch_timeout`, `fetch_error`, `api_request_exception` — сбои до получения/обработки ответа.
+
+Диагностика хранится в `localStorage` под ключом `eventhub_auth_debug`, последние 100 событий доступны в `window.__eventhubAuthDebug`. В профиле кнопка `Скопировать диагностику webhook` копирует JSON trace. Все записи коррелируются по `request_id`, который также передается в POST body как `meta.request_id`.
+
+Для защиты пользовательских данных response body ограничивается 12 000 символами и маскирует `access_token`, `token`, `password`, `tg_init_data` и `initData`. Поэтому trace показывает фактически полученный ответ и его структуру, но не сохраняет секреты.
+
 После повторного открытия Mini App нужно убедиться, что в n8n появился новый execution. Если после открытия по GitHub Pages новый execution отсутствует, запрос не вышел из WebView и нужно проверять production HTML/браузерную консоль, а не SQL-ветки n8n.
 
 Для проверки текущих n8n-данных используются локальные диагностические exports в корне рабочего каталога:

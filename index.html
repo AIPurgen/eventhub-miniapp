@@ -584,7 +584,7 @@
       <div class="settings-section"><h4>Данные Telegram</h4><div class="settings-field"><label>ФИО из Telegram</label><input id="profileTelegramFullName" readonly></div><div class="settings-field"><label>Telegram username</label><input id="profileTelegramHandle" readonly></div><div class="settings-field"><label>Текущая роль</label><input id="profileRole" readonly></div><p class="settings-note">Эти данные берутся из Telegram или учетной записи и не редактируются в приложении.</p></div>
       <div class="settings-section"><h4>О себе</h4><div class="settings-field"><label for="profileDisplayName">Отображаемое имя</label><input id="profileDisplayName" maxlength="80" placeholder="Как к вам обращаться"></div><div class="settings-field"><label for="profileContact">Контакты</label><input id="profileContact" maxlength="120" placeholder="Телефон, сайт или другой способ связи"></div><div class="settings-field"><label for="profileBio">Информация о себе</label><textarea id="profileBio" maxlength="600" placeholder="Расскажите немного о себе"></textarea></div></div>
       <div class="settings-section"><h4>Оформление</h4><div class="appearance-row"><div class="appearance-label"><strong>Тема</strong><span>Выберите удобный режим</span></div><div class="theme-choice"><button id="settingsLightTheme" type="button" onclick="setProfileTheme('light')">Светлая</button><button id="settingsDarkTheme" type="button" onclick="setProfileTheme('dark')">Тёмная</button></div></div></div>
-      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button><button class="btn-secondary" type="button" onclick="copyAuthTrace()">Скопировать диагностику авторизации</button></div>
+      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button><button class="btn-secondary" type="button" onclick="copyAuthTrace()">Скопировать диагностику webhook</button></div>
     </div>
   </div>
 </section>
@@ -665,7 +665,7 @@ function formatDateShort(dateStr) {
 }
 
 async function api(entity, action, data = {}) {
-    const requestId = 'auth-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const requestId = 'api-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
     const requestStartedAt = Date.now();
     try {
         const context = refreshTelegramContext();
@@ -681,16 +681,20 @@ async function api(entity, action, data = {}) {
         const auth = useTelegramAuth || !accessToken
           ? { tg_init_data: currentInitData, user: currentUser }
           : { access_token: accessToken, user: currentUser };
-        if (entity === 'auth') recordAuthTrace('auth_request', {
+          recordAuthTrace('api_request', {
           request_id: requestId,
+            entity,
           action,
           auth_mode: useTelegramAuth ? 'telegram_init_data' : (accessToken ? 'access_token' : 'empty_auth'),
           has_signed_init_data: Boolean(currentInitData),
           telegram_user_id_present: Boolean(currentUser?.id),
           request_user_keys: Object.keys(currentUser || {}).slice(0, 30)
         });
-        if (entity === 'auth') recordAuthTrace('fetch_start', { request_id: requestId, action });
-        if (entity === 'auth') recordAuthTrace('network_context', {
+          recordAuthTrace('fetch_start', { request_id: requestId, entity, action });
+          recordAuthTrace('network_context', {
+            request_id: requestId,
+            entity,
+            action,
           origin: location.origin,
           online: navigator.onLine,
           user_agent: navigator.userAgent.slice(0, 180),
@@ -723,8 +727,9 @@ async function api(entity, action, data = {}) {
           } catch (error) {
             lastError = error;
             const timedOut = error?.name === 'AbortError';
-            if (entity === 'auth') recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
+            recordAuthTrace(timedOut ? 'fetch_timeout' : 'fetch_error', {
               request_id: requestId,
+              entity,
               action,
               attempt,
               max_attempts: maxAttempts,
@@ -733,7 +738,7 @@ async function api(entity, action, data = {}) {
               error_message: String(error?.message || 'fetch failed').slice(0, 160)
             });
             if (attempt < maxAttempts) {
-              if (entity === 'auth') recordAuthTrace('auth_retry', { request_id: requestId, action, attempt: attempt + 1, reason: timedOut ? 'timeout' : 'network_error' });
+              if (entity === 'auth') recordAuthTrace('auth_retry', { request_id: requestId, entity, action, attempt: attempt + 1, reason: timedOut ? 'timeout' : 'network_error' });
               await new Promise(resolve => setTimeout(resolve, 400));
               continue;
             }
@@ -742,18 +747,42 @@ async function api(entity, action, data = {}) {
           }
         }
         if (!res) throw lastError || new Error('fetch failed');
-        const raw = await res.text();
-        const parsed = parseWebhookValue(raw);
-        if (entity === 'auth') recordAuthTrace('webhook_response', {
+        recordAuthTrace('http_response_received', {
           request_id: requestId,
+          entity,
+          action,
+          http_status: res.status,
+          ok: res.ok,
+          redirected: res.redirected,
+          response_url: res.url || API_URL,
+          headers: responseHeadersForTrace(res.headers)
+        });
+        let raw;
+        try {
+          raw = await res.text();
+        } catch (error) {
+          recordAuthTrace('response_body_read_error', {
+            request_id: requestId,
+            entity,
+            action,
+            http_status: res.status,
+            error_name: error?.name || 'Error',
+            error_message: String(error?.message || 'response body read failed').slice(0, 240)
+          });
+          throw error;
+        }
+        const parsed = parseWebhookValue(raw);
+        recordAuthTrace('webhook_response', {
+          request_id: requestId,
+          entity,
           action,
           http_status: res.status,
           ok: res.ok,
           elapsed_ms: Date.now() - requestStartedAt,
           raw_length: raw.length,
-          raw_prefix: raw.slice(0, 80).replace(/[\r\n\t]/g, ' '),
+          raw_body: traceResponseBody(raw),
           shape: webhookShape(parsed),
-          error: webhookError(parsed) || null
+          parsed_error: webhookError(parsed) || null
         });
         if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
         if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true, http_status: res.status };
@@ -761,7 +790,7 @@ async function api(entity, action, data = {}) {
         return parsed;
     } catch (e) {
         console.error(e);
-      if (entity === 'auth' && e?.name !== 'AbortError') recordAuthTrace('auth_request_exception', { request_id: requestId, action, elapsed_ms: Date.now() - requestStartedAt, error_name: e?.name || 'Error' });
+      if (e?.name !== 'AbortError') recordAuthTrace('api_request_exception', { request_id: requestId, entity, action, elapsed_ms: Date.now() - requestStartedAt, error_name: e?.name || 'Error', error_message: String(e?.message || 'request failed').slice(0, 240) });
         const error = document.getElementById('authError');
         if (error) error.textContent = "Нет связи с сервером";
         return { success: false, error: "Нет связи с сервером" };
@@ -1075,9 +1104,43 @@ function webhookShape(value, depth = 0) {
   if (typeof value === 'object') return { type: 'object', keys: Object.keys(value).slice(0, 30), nested: Object.fromEntries(Object.keys(value).filter(key => ['body', 'response', 'json', 'result', 'data', 'user', 'account', 'permissions'].includes(key)).slice(0, 8).map(key => [key, webhookShape(value[key], depth + 1)])) };
   return typeof value;
 }
+function traceResponseBody(raw) {
+  const text = String(raw ?? '');
+  const maxLength = 12000;
+  const truncated = text.length > maxLength;
+  let visible = text.slice(0, maxLength);
+  try {
+    const parsed = JSON.parse(text);
+    const redact = (value) => {
+      if (Array.isArray(value)) return value.map(redact);
+      if (!value || typeof value !== 'object') return value;
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+        if (['access_token', 'token', 'password', 'tg_init_data', 'init_data', 'initdata', 'tginitdata'].includes(String(key).toLowerCase())) return [key, '[REDACTED]'];
+        return [key, redact(item)];
+      }));
+    };
+    visible = JSON.stringify(redact(parsed));
+  } catch (_) {}
+  return {
+    value: visible,
+    length: text.length,
+    truncated
+  };
+}
+function responseHeadersForTrace(headers) {
+  const result = {};
+  if (!headers || typeof headers.forEach !== 'function') return result;
+  headers.forEach((value, key) => {
+    const normalizedKey = String(key).toLowerCase();
+    // Never persist cookies or authorization material in client diagnostics.
+    if (['set-cookie', 'cookie', 'authorization', 'proxy-authorization'].includes(normalizedKey)) return;
+    result[normalizedKey] = String(value).slice(0, 1000);
+  });
+  return result;
+}
 function recordAuthTrace(event, details = {}) {
   const entry = { at: new Date().toISOString(), event, ...details };
-  window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-30);
+  window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-100);
   try { localStorage.setItem('eventhub_auth_debug', JSON.stringify(window.__eventhubAuthDebug)); } catch (_) {}
   if (typeof console !== 'undefined' && console.info) console.info('[EventHub auth]', entry);
 }

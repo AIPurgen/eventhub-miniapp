@@ -38,6 +38,7 @@
 - [x] `auth/validate` возвращает пользователя и `is_admin` при валидном контексте.
 - [x] Inline JavaScript проходит `node --check` после извлечения из HTML.
 - [x] Parser mock-проверки проходят для двойного JSON, n8n envelopes, вложенных collections, error responses и action boolean.
+- [x] Mini App trace фиксирует фактический webhook body, HTTP status, response headers, parsed shape и ошибки чтения/парсинга для каждого API-вызова.
 
 ## Ограничения, требующие ручной проверки в Telegram
 
