@@ -1196,6 +1196,61 @@ function apiResourceTiming() {
     }));
   } catch (_) { return []; }
 }
+async function runWebViewNetworkProbes() {
+  const probeId = 'probe-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  const apiUrl = (() => { try { return new URL(API_URL); } catch (_) { return null; } })();
+  const common = {
+    probe_id: probeId,
+    api_host: apiUrl?.host || '',
+    api_origin: apiUrl?.origin || '',
+    page_origin: location.origin,
+    secure_context: Boolean(window.isSecureContext),
+    user_agent: navigator.userAgent.slice(0, 180),
+    telegram_webapp_present: Boolean(window.Telegram?.WebApp),
+    online: navigator.onLine,
+    connection: networkConnectionSnapshot()
+  };
+  recordAuthTrace('webview_probe_start', common);
+  const timedProbe = async (name, input, options = {}) => {
+    const started = performance.now();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = setTimeout(() => controller?.abort(), 8000);
+    try {
+      const response = await fetch(input, {
+        method: 'GET',
+        mode: options.mode || 'no-cors',
+        cache: 'no-store',
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer',
+        signal: controller?.signal
+      });
+      recordAuthTrace(name, {
+        ...common,
+        outcome: 'resolved',
+        elapsed_ms: Math.round(performance.now() - started),
+        response_type: response.type || null,
+        response_status: response.type === 'opaque' ? null : response.status,
+        response_ok: response.type === 'opaque' ? null : response.ok
+      });
+    } catch (error) {
+      recordAuthTrace(name, {
+        ...common,
+        outcome: 'rejected',
+        elapsed_ms: Math.round(performance.now() - started),
+        error_name: error?.name || 'Error',
+        error_message: String(error?.message || 'probe failed').slice(0, 240)
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  const apiProbe = apiUrl ? `${apiUrl.origin}/` : API_URL;
+  await Promise.all([
+    timedProbe('webview_transport_probe', apiProbe),
+    timedProbe('webview_same_origin_probe', `${location.origin}${location.pathname}` , { mode: 'same-origin' })
+  ]);
+  recordAuthTrace('webview_probe_complete', { probe_id: probeId });
+}
 function recordAuthTrace(event, details = {}) {
   const entry = { at: new Date().toISOString(), event, ...details };
   window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-100);
@@ -1746,6 +1801,10 @@ const storedTheme = (() => { try { return localStorage.getItem('eventhub_theme')
 applyTheme(storedTheme);
 updateProfileThemeButtons();
 installClientDiagnostics();
+runWebViewNetworkProbes().catch(error => recordAuthTrace('webview_probe_exception', {
+  error_name: error?.name || 'Error',
+  error_message: String(error?.message || 'probe failed').slice(0, 240)
+}));
 let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
 let telegramBootstrapStarted = false;
