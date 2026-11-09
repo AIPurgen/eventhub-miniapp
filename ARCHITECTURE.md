@@ -330,6 +330,27 @@ Frontend записывает диагностический trace для **ка
 
 Для защиты пользовательских данных response body ограничивается 12 000 символами и маскирует `access_token`, `token`, `password`, `tg_init_data` и `initData`. Поэтому trace показывает фактически полученный ответ и его структуру, но не сохраняет секреты.
 
+### Сквозная диагностика входа n8n
+
+В production workflow `EventHub_Webhook` сразу после `Webhook` установлен узел `Webhook Intake Trace`. Он не изменяет бизнес-логику, а добавляет в execution data безопасный `_diagnostics`-объект с:
+
+- `request_id`;
+- временем приема;
+- `webhook_url` и execution mode;
+- origin, content type и content length;
+- ключами входного body;
+- entity/action;
+- наличием auth, signed Telegram init data и Telegram user ID;
+- безопасными HTTP headers без credentials/cookies.
+
+Цепочка production auth теперь проверяется фактическим execution как:
+
+```text
+Webhook → Webhook Intake Trace → auth → validate → Execute a SQL query → Respond Telegram Validate
+```
+
+Если клиентский trace содержит `request_dispatch`, но в n8n Executions API отсутствует тот же `request_id`, запрос не подтвержден на входе n8n. Если execution есть, `_diagnostics.intake` подтверждает прием webhook, а список node runs показывает точную последнюю выполненную ноду.
+
 После повторного открытия Mini App нужно убедиться, что в n8n появился новый execution. Если после открытия по GitHub Pages новый execution отсутствует, запрос не вышел из WebView и нужно проверять production HTML/браузерную консоль, а не SQL-ветки n8n.
 
 Для проверки текущих n8n-данных используются локальные диагностические exports в корне рабочего каталога:

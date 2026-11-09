@@ -721,8 +721,12 @@ async function api(entity, action, data = {}) {
               entity,
               action,
               body_length: requestBody.length,
-              timeout_ms: timeoutMs
+              timeout_ms: timeoutMs,
+              page_visibility: document.visibilityState,
+              online: navigator.onLine,
+              connection: networkConnectionSnapshot()
             });
+            recordAuthTrace('fetch_call_created', { request_id: requestId, entity, action });
             const fetchPromise = fetch(API_URL, {
               method: "POST",
               mode: "cors",
@@ -746,6 +750,15 @@ async function api(entity, action, data = {}) {
             lastError = error;
             const timedOut = error?.name === 'AbortError';
             const watchdogTimedOut = error?.name === 'WatchdogTimeoutError';
+            recordAuthTrace('fetch_promise_rejected', {
+              request_id: requestId,
+              entity,
+              action,
+              attempt,
+              error_name: error?.name || 'Error',
+              error_message: String(error?.message || 'fetch rejected').slice(0, 240),
+              resource_timing: apiResourceTiming()
+            });
             recordAuthTrace(watchdogTimedOut ? 'fetch_watchdog_timeout' : (timedOut ? 'fetch_timeout' : 'fetch_error'), {
               request_id: requestId,
               entity,
@@ -1159,11 +1172,61 @@ function responseHeadersForTrace(headers) {
   });
   return result;
 }
+function networkConnectionSnapshot() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!connection) return null;
+  return {
+    effective_type: connection.effectiveType || null,
+    type: connection.type || null,
+    downlink: Number.isFinite(connection.downlink) ? connection.downlink : null,
+    rtt: Number.isFinite(connection.rtt) ? connection.rtt : null,
+    save_data: Boolean(connection.saveData)
+  };
+}
+function apiResourceTiming() {
+  try {
+    const entries = performance.getEntriesByName(API_URL).slice(-3);
+    return entries.map(entry => ({
+      initiator_type: entry.initiatorType || null,
+      start_time: Math.round(entry.startTime),
+      duration: Math.round(entry.duration),
+      transfer_size: entry.transferSize ?? null,
+      encoded_body_size: entry.encodedBodySize ?? null,
+      next_hop_protocol: entry.nextHopProtocol || null
+    }));
+  } catch (_) { return []; }
+}
 function recordAuthTrace(event, details = {}) {
   const entry = { at: new Date().toISOString(), event, ...details };
   window.__eventhubAuthDebug = [...(window.__eventhubAuthDebug || []), entry].slice(-100);
   try { localStorage.setItem('eventhub_auth_debug', JSON.stringify(window.__eventhubAuthDebug)); } catch (_) {}
   if (typeof console !== 'undefined' && console.info) console.info('[EventHub auth]', entry);
+}
+function installClientDiagnostics() {
+  window.addEventListener('error', event => recordAuthTrace('window_error', {
+    message: String(event?.message || 'window error').slice(0, 300),
+    source: String(event?.filename || '').slice(-180),
+    line: event?.lineno || null,
+    column: event?.colno || null
+  }));
+  window.addEventListener('unhandledrejection', event => recordAuthTrace('unhandled_rejection', {
+    reason: String(event?.reason?.message || event?.reason || 'unhandled rejection').slice(0, 300)
+  }));
+  document.addEventListener('visibilitychange', () => recordAuthTrace('page_visibility', {
+    visibility: document.visibilityState,
+    hidden: document.hidden
+  }));
+  window.addEventListener('online', () => recordAuthTrace('network_online', { online: true, connection: networkConnectionSnapshot() }));
+  window.addEventListener('offline', () => recordAuthTrace('network_online', { online: false, connection: networkConnectionSnapshot() }));
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  connection?.addEventListener?.('change', () => recordAuthTrace('network_change', { connection: networkConnectionSnapshot() }));
+  recordAuthTrace('client_diagnostics_ready', {
+    href: location.href.split('?')[0],
+    visibility: document.visibilityState,
+    online: navigator.onLine,
+    connection: networkConnectionSnapshot(),
+    resource_timing_supported: typeof performance?.getEntriesByName === 'function'
+  });
 }
 function copyAuthTrace() {
   const trace = JSON.stringify({
@@ -1682,6 +1745,7 @@ setAuthMode('login');
 const storedTheme = (() => { try { return localStorage.getItem('eventhub_theme'); } catch (_) { return null; } })() || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
 updateProfileThemeButtons();
+installClientDiagnostics();
 let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
 let telegramBootstrapStarted = false;
