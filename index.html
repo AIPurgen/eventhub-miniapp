@@ -381,8 +381,8 @@
         .moderator-picker-trigger:focus { border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent); }
         .moderator-picker-trigger { width:100%; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
         .moderator-picker-trigger::after { content:'⌄'; color:var(--secondary); font-size:20px; line-height:1; }
-        .moderator-picker-overlay { position:fixed; inset:0; z-index:1200; display:none; align-items:flex-end; justify-content:center; padding:18px; background:rgba(23,23,23,.42); backdrop-filter:blur(12px); }
-        .moderator-picker-overlay.show { display:flex; animation:participantBackdropIn .22s ease both; }
+        .moderator-picker-overlay { position:fixed; inset:0; z-index:3000; display:none; align-items:flex-end; justify-content:center; padding:18px; background:rgba(23,23,23,.42); backdrop-filter:blur(12px); pointer-events:none; }
+        .moderator-picker-overlay.show { display:flex; animation:participantBackdropIn .22s ease both; pointer-events:auto; }
         .moderator-picker-panel { width:min(100%,520px); max-height:min(72dvh,560px); overflow:auto; padding:0 14px 14px; border:1px solid rgba(255,255,255,.72); border-radius:30px 30px 22px 22px; background:var(--card-solid,var(--card)); color:var(--text); box-shadow:0 -18px 60px rgba(44,35,24,.18); animation:participantSheetIn .25s ease both; }
         .moderator-picker-panel::before { content:''; display:block; width:42px; height:5px; margin:10px auto 14px; border-radius:999px; background:var(--secondary); opacity:.28; }
         .moderator-picker-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 4px 12px; }
@@ -885,8 +885,14 @@ async function loadModerators() {
         if (res?.success === false) throw new Error(res.error || res.message || 'Ошибка webhook');
         const mods = webhookCollection(res, ['moderators']);
         if (!Array.isArray(mods)) throw new Error('Webhook вернул неверный формат списка модераторов');
-        select.innerHTML = '<option value="">Не выбран (я модератор)</option>';
-        trigger.textContent = 'Не выбран (я модератор)';
+        const currentUserId = String(user?.id || tg?.initDataUnsafe?.user?.id || '');
+        select.innerHTML = '';
+        const ownOption = document.createElement('option');
+        ownOption.value = currentUserId;
+        ownOption.textContent = 'Я (текущий пользователь)';
+        select.appendChild(ownOption);
+        select.value = currentUserId;
+        trigger.textContent = 'Я (текущий пользователь)';
         mods.forEach(m => {
             const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Без имени';
             const username = m.username ? ` (@${m.username})` : '';
@@ -915,15 +921,16 @@ function renderModeratorPicker() {
     const select = document.getElementById('eventModeratorInput');
     const trigger = document.getElementById('moderatorPickerButton');
     if (!root || !select || !trigger) return;
-    const selected = String(select.value || '');
+    const currentUserId = String(user?.id || tg?.initDataUnsafe?.user?.id || '');
+    const selected = String(select.value || currentUserId || '');
     const mods = Array.isArray(window.__eventhubModerators) ? window.__eventhubModerators : [];
-    const options = [{ id:'', first_name:'Не выбран', last_name:'', username:'', self:true }, ...mods];
+    const options = [{ id:currentUserId, first_name:'Я', last_name:'', username:'', self:true }, ...mods.filter(m => String(m.id) !== currentUserId)];
     root.innerHTML = options.map((m) => {
-        const label = m.self ? 'Не выбран (я модератор)' : moderatorLabel(m);
+        const label = m.self ? 'Я (текущий пользователь)' : moderatorLabel(m);
         const initials = m.self ? 'Я' : ((m.first_name || '?')[0] + (m.last_name || '')[0]).toUpperCase();
         return `<button class="moderator-option ${String(m.id || '') === selected ? 'selected' : ''}" type="button" data-moderator-id="${escapeHtml(String(m.id || ''))}"><span class="moderator-option-avatar">${escapeHtml(initials)}</span><span class="moderator-option-copy"><span class="moderator-option-name">${escapeHtml(label.split(' (@')[0])}</span><span class="moderator-option-handle">${m.self ? 'Вы будете модератором' : escapeHtml(m.username ? '@' + m.username : 'Telegram-профиль')}</span></span><span class="moderator-option-check" aria-hidden="true"></span></button>`;
     }).join('');
-    trigger.textContent = selected ? moderatorLabel(mods.find(m => String(m.id) === selected)) : 'Не выбран (я модератор)';
+    trigger.textContent = selected === currentUserId ? 'Я (текущий пользователь)' : moderatorLabel(mods.find(m => String(m.id) === selected));
     root.querySelectorAll('[data-moderator-id]').forEach((button) => button.addEventListener('click', () => {
         select.value = button.dataset.moderatorId || '';
         renderModeratorPicker();
@@ -1066,9 +1073,9 @@ document.getElementById('fab').onclick = async () => {
     document.getElementById('eventDescInput').value = '';
     document.getElementById('eventMaxInput').value = '';
     document.getElementById('eventPriceInput').value = '0';
-    if (isAdmin) await loadModerators();
     document.getElementById('createEventModal').classList.add('show');
     checkReady();
+    if (isAdmin) await loadModerators();
 };
 
 function closeCreateModal() {
@@ -1085,9 +1092,10 @@ async function saveNewEvent() {
         description: document.getElementById('eventDescInput').value.trim(),
         event_time,
         max_participants: parseInt(document.getElementById('eventMaxInput').value) || 0,
-        moderator_id: document.getElementById('eventModeratorInput').value || null,
+        moderator_id: document.getElementById('eventModeratorInput').value || String(user?.id || tg?.initDataUnsafe?.user?.id || ''),
         price_rub: parseInt(document.getElementById('eventPriceInput').value) || 0
     };
+    if (!data.moderator_id) return tg.showAlert("Не удалось определить модератора");
     const res = await api("events", "create", data);
     const createdEvent = authUserFromResponse(res) || webhookValue(res, ['event']);
     if (createdEvent?.id || res?.success === true || res?.ok === true) {
@@ -1095,7 +1103,7 @@ async function saveNewEvent() {
         closeCreateModal();
         await init();
     } else {
-        tg.showAlert("Ошибка создания события");
+        tg.showAlert(res?.error || res?.message || "Ошибка создания события");
     }
 }
 
@@ -1863,11 +1871,14 @@ setAuthMode('login');
 const storedTheme = (() => { try { return localStorage.getItem('eventhub_theme'); } catch (_) { return null; } })() || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 applyTheme(storedTheme);
 updateProfileThemeButtons();
-installClientDiagnostics();
-runWebViewNetworkProbes().catch(error => recordAuthTrace('webview_probe_exception', {
-  error_name: error?.name || 'Error',
-  error_message: String(error?.message || 'probe failed').slice(0, 240)
-}));
+// Diagnostics are opt-in: they add startup work but do not participate in auth.
+if (new URLSearchParams(window.location.search).has('diagnostics')) {
+  installClientDiagnostics();
+  runWebViewNetworkProbes().catch(error => recordAuthTrace('webview_probe_exception', {
+    error_name: error?.name || 'Error',
+    error_message: String(error?.message || 'probe failed').slice(0, 240)
+  }));
+}
 let telegramBootstrapAttempts = 0;
 let telegramBootstrapTimer = null;
 let telegramBootstrapStarted = false;
