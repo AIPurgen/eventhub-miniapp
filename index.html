@@ -603,7 +603,7 @@ window.addEventListener('error', (event) => {
 });
 let tg = window.Telegram?.WebApp || null;
 if (tg) { try { tg.ready(); } catch (_) {} try { tg.expand(); } catch (_) {} try { tg.enableClosingConfirmation(); } catch (_) {} }
-const API_URL = "https://hook.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad45f";
+const API_URL = "https://n8n.arima.ru/webhook/5dbde993-ac88-40f8-889a-417849aad45f";
 let telegramInitData = String(tg?.initData || '');
 let user = tg?.initDataUnsafe?.user || {};
 let accessToken = (() => { try { return sessionStorage.getItem('eventhub_access_token') || ''; } catch (_) { return ''; } })();
