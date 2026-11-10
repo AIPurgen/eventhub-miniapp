@@ -360,6 +360,44 @@
             min-width: 160px;
             text-align: center;
         }
+
+        /* Shared VKOR sheet and form controls. Keep every secondary window in the
+           same visual language instead of falling back to native Android dialogs. */
+        .datetime-modal,
+        .picker-overlay,
+        .participant-profile-modal { background: rgba(23,23,23,.42); backdrop-filter: blur(12px); }
+        .datetime-panel,
+        .picker-panel,
+        .participant-profile-card,
+        .event-detail-panel { border: 1px solid rgba(255,255,255,.72); border-radius: 30px 30px 0 0; background: var(--card-solid,var(--card)); color: var(--text); box-shadow: 0 -18px 60px rgba(44,35,24,.18); }
+        .datetime-panel::before,
+        .picker-panel::before,
+        .participant-profile-card::before,
+        .event-detail-panel::before { content: ''; display:block; width:42px; height:5px; margin:10px auto 2px; border-radius:999px; background:var(--secondary); opacity:.28; }
+        .form-group select,
+        .moderator-picker-trigger { min-height:52px; border:1px solid transparent; border-radius:17px; background:var(--lightgray); color:var(--text); font-weight:650; text-align:left; }
+        .form-group #eventModeratorInput { display:none!important; }
+        .form-group select:focus,
+        .moderator-picker-trigger:focus { border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent); }
+        .moderator-picker-trigger { width:100%; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+        .moderator-picker-trigger::after { content:'⌄'; color:var(--secondary); font-size:20px; line-height:1; }
+        .moderator-picker-overlay { position:fixed; inset:0; z-index:1200; display:none; align-items:flex-end; justify-content:center; padding:18px; background:rgba(23,23,23,.42); backdrop-filter:blur(12px); }
+        .moderator-picker-overlay.show { display:flex; animation:participantBackdropIn .22s ease both; }
+        .moderator-picker-panel { width:min(100%,520px); max-height:min(72dvh,560px); overflow:auto; padding:0 14px 14px; border:1px solid rgba(255,255,255,.72); border-radius:30px 30px 22px 22px; background:var(--card-solid,var(--card)); color:var(--text); box-shadow:0 -18px 60px rgba(44,35,24,.18); animation:participantSheetIn .25s ease both; }
+        .moderator-picker-panel::before { content:''; display:block; width:42px; height:5px; margin:10px auto 14px; border-radius:999px; background:var(--secondary); opacity:.28; }
+        .moderator-picker-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 4px 12px; }
+        .moderator-picker-title { font-size:20px; font-weight:850; letter-spacing:-.03em; }
+        .moderator-picker-close { border:0; border-radius:12px; padding:9px 12px; background:var(--lightgray); color:var(--secondary); font-weight:750; cursor:pointer; }
+        .moderator-option { width:100%; display:flex; align-items:center; gap:12px; padding:13px 10px; border:0; border-top:1px solid var(--gray); background:transparent; color:var(--text); text-align:left; cursor:pointer; }
+        .moderator-option:first-of-type { border-top:0; }
+        .moderator-option:active { background:var(--lightgray); }
+        .moderator-option-avatar { width:40px; height:40px; flex:0 0 40px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-weight:850; }
+        .moderator-option-copy { min-width:0; flex:1; }
+        .moderator-option-name { display:block; font-weight:750; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .moderator-option-handle { display:block; margin-top:3px; color:var(--secondary); font-size:12px; }
+        .moderator-option-check { width:22px; height:22px; border:2px solid var(--gray); border-radius:50%; }
+        .moderator-option.selected .moderator-option-check { border-color:var(--accent); box-shadow:inset 0 0 0 5px var(--card-solid,var(--card)); background:var(--accent); }
+        .profile-role-value { color:var(--accent)!important; font-weight:800; }
     
         .auth-shell{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at top right,rgba(99,102,241,.22),transparent 45%),var(--bg);transition:opacity .3s,visibility .3s}
         .auth-shell.hidden{opacity:0;visibility:hidden;pointer-events:none}
@@ -531,7 +569,8 @@
             </div>
             <div class="form-group">
                 <label>Модератор</label>
-                <select id="eventModeratorInput"><option value="">Загрузка...</option></select>
+                <select id="eventModeratorInput" aria-hidden="true" tabindex="-1"><option value="">Загрузка...</option></select>
+                <button id="moderatorPickerButton" class="moderator-picker-trigger" type="button" onclick="openModeratorPicker()">Загрузка...</button>
             </div>
             <div class="form-group">
                 <label>Стоимость (₽, 0 = бесплатно)</label>
@@ -575,6 +614,13 @@
     </div>
 </div>
 
+<div id="moderatorPicker" class="moderator-picker-overlay" onclick="if(event.target===this)closeModeratorPicker()">
+  <div class="moderator-picker-panel" role="dialog" aria-modal="true" aria-labelledby="moderatorPickerTitle">
+    <div class="moderator-picker-head"><div id="moderatorPickerTitle" class="moderator-picker-title">Выберите модератора</div><button class="moderator-picker-close" type="button" onclick="closeModeratorPicker()">Закрыть</button></div>
+    <div id="moderatorPickerOptions"></div>
+  </div>
+</div>
+
 
 <section id="settingsScreen" class="settings-screen" aria-labelledby="settingsTitle">
   <div class="settings-inner">
@@ -584,7 +630,7 @@
       <div class="settings-section"><h4>Данные Telegram</h4><div class="settings-field"><label>ФИО из Telegram</label><input id="profileTelegramFullName" readonly></div><div class="settings-field"><label>Telegram username</label><input id="profileTelegramHandle" readonly></div><div class="settings-field"><label>Текущая роль</label><input id="profileRole" readonly></div><p class="settings-note">Эти данные берутся из Telegram или учетной записи и не редактируются в приложении.</p></div>
       <div class="settings-section"><h4>О себе</h4><div class="settings-field"><label for="profileDisplayName">Отображаемое имя</label><input id="profileDisplayName" maxlength="80" placeholder="Как к вам обращаться"></div><div class="settings-field"><label for="profileContact">Контакты</label><input id="profileContact" maxlength="120" placeholder="Телефон, сайт или другой способ связи"></div><div class="settings-field"><label for="profileBio">Информация о себе</label><textarea id="profileBio" maxlength="600" placeholder="Расскажите немного о себе"></textarea></div></div>
       <div class="settings-section"><h4>Оформление</h4><div class="appearance-row"><div class="appearance-label"><strong>Тема</strong><span>Выберите удобный режим</span></div><div class="theme-choice"><button id="settingsLightTheme" type="button" onclick="setProfileTheme('light')">Светлая</button><button id="settingsDarkTheme" type="button" onclick="setProfileTheme('dark')">Тёмная</button></div></div></div>
-      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button><button class="btn-secondary" type="button" onclick="copyAuthTrace()">Скопировать диагностику webhook</button></div>
+      <div class="settings-actions"><button class="btn-primary" type="button" onclick="saveProfileSettings()">Сохранить</button></div>
     </div>
   </div>
 </section>
@@ -833,12 +879,14 @@ async function api(entity, action, data = {}) {
 
 async function loadModerators() {
     const select = document.getElementById('eventModeratorInput');
+    const trigger = document.getElementById('moderatorPickerButton');
     try {
         const res = await api("users", "get_moderators");
         if (res?.success === false) throw new Error(res.error || res.message || 'Ошибка webhook');
         const mods = webhookCollection(res, ['moderators']);
         if (!Array.isArray(mods)) throw new Error('Webhook вернул неверный формат списка модераторов');
         select.innerHTML = '<option value="">Не выбран (я модератор)</option>';
+        trigger.textContent = 'Не выбран (я модератор)';
         mods.forEach(m => {
             const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Без имени';
             const username = m.username ? ` (@${m.username})` : '';
@@ -847,12 +895,43 @@ async function loadModerators() {
             opt.textContent = name + username;
             select.appendChild(opt);
         });
+        window.__eventhubModerators = mods;
+        renderModeratorPicker();
     } catch(e) {
         console.error('get_moderators:', e);
         select.innerHTML = '<option value="">Ошибка webhook: модераторы не загружены</option>';
+        if (trigger) trigger.textContent = 'Не удалось загрузить модераторов';
         showToast(e?.message || 'Ошибка обращения к webhook', 'error');
     }
 }
+
+function moderatorLabel(moderator) {
+    if (!moderator) return 'Не выбран (я модератор)';
+    const name = [moderator.first_name, moderator.last_name].filter(Boolean).join(' ') || 'Без имени';
+    return name + (moderator.username ? ` (@${moderator.username})` : '');
+}
+function renderModeratorPicker() {
+    const root = document.getElementById('moderatorPickerOptions');
+    const select = document.getElementById('eventModeratorInput');
+    const trigger = document.getElementById('moderatorPickerButton');
+    if (!root || !select || !trigger) return;
+    const selected = String(select.value || '');
+    const mods = Array.isArray(window.__eventhubModerators) ? window.__eventhubModerators : [];
+    const options = [{ id:'', first_name:'Не выбран', last_name:'', username:'', self:true }, ...mods];
+    root.innerHTML = options.map((m) => {
+        const label = m.self ? 'Не выбран (я модератор)' : moderatorLabel(m);
+        const initials = m.self ? 'Я' : ((m.first_name || '?')[0] + (m.last_name || '')[0]).toUpperCase();
+        return `<button class="moderator-option ${String(m.id || '') === selected ? 'selected' : ''}" type="button" data-moderator-id="${escapeHtml(String(m.id || ''))}"><span class="moderator-option-avatar">${escapeHtml(initials)}</span><span class="moderator-option-copy"><span class="moderator-option-name">${escapeHtml(label.split(' (@')[0])}</span><span class="moderator-option-handle">${m.self ? 'Вы будете модератором' : escapeHtml(m.username ? '@' + m.username : 'Telegram-профиль')}</span></span><span class="moderator-option-check" aria-hidden="true"></span></button>`;
+    }).join('');
+    trigger.textContent = selected ? moderatorLabel(mods.find(m => String(m.id) === selected)) : 'Не выбран (я модератор)';
+    root.querySelectorAll('[data-moderator-id]').forEach((button) => button.addEventListener('click', () => {
+        select.value = button.dataset.moderatorId || '';
+        renderModeratorPicker();
+        closeModeratorPicker();
+    }));
+}
+function openModeratorPicker() { renderModeratorPicker(); document.getElementById('moderatorPicker')?.classList.add('show'); }
+function closeModeratorPicker() { document.getElementById('moderatorPicker')?.classList.remove('show'); }
 
 function prevMonth() {
     const today = new Date();
@@ -1283,22 +1362,6 @@ function installClientDiagnostics() {
     resource_timing_supported: typeof performance?.getEntriesByName === 'function'
   });
 }
-function copyAuthTrace() {
-  const trace = JSON.stringify({
-    generated_at: new Date().toISOString(),
-    url: location.origin + location.pathname,
-    auth_state: authState,
-    trace: window.__eventhubAuthDebug || []
-  }, null, 2);
-  const done = () => showToast('Диагностика скопирована', 'success');
-  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(trace).then(done).catch(() => fallbackCopy(trace, done));
-  else fallbackCopy(trace, done);
-}
-function fallbackCopy(text, done) {
-  const area = document.createElement('textarea'); area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
-  document.body.appendChild(area); area.select(); try { document.execCommand('copy'); done(); } catch (_) { showToast('Не удалось скопировать диагностику', 'error'); } area.remove();
-}
-window.copyAuthTrace = copyAuthTrace;
 function parseWebhookValue(value, depth = 0) {
   if (depth > 4 || value === null || value === undefined) return value;
   if (typeof value !== 'string') return value;
@@ -1767,7 +1830,7 @@ function renderOwnerProfile(){
   const profileUsername=document.getElementById('profileTelegramUsername'); if(profileUsername)profileUsername.textContent=handle;
   const profileFullName=document.getElementById('profileTelegramFullName'); if(profileFullName)profileFullName.value=tgName;
   const profileHandle=document.getElementById('profileTelegramHandle'); if(profileHandle)profileHandle.value=handle;
-  const profileRoleInput=document.getElementById('profileRole'); if(profileRoleInput)profileRoleInput.value=role;
+  const profileRoleInput=document.getElementById('profileRole'); if(profileRoleInput){ profileRoleInput.value=role; profileRoleInput.classList.toggle('profile-role-value', role === 'Администратор'); }
   avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url);
 }
 function openSettings(){
@@ -1870,7 +1933,7 @@ void bootstrapMiniApp();
   const favorites = new Set(JSON.parse(localStorage.getItem('eventhub_favorites') || '[]'));
   const liked = new Set(JSON.parse(localStorage.getItem('eventhub_likes') || '[]'));
   const toast = (message) => { const el=document.getElementById('pulseToast'); if(!el)return; el.textContent=message; el.classList.add('show'); clearTimeout(window.__pulseToast); window.__pulseToast=setTimeout(()=>el.classList.remove('show'),1800); };
-  const syncModalState = () => { const open = [...document.querySelectorAll('.datetime-modal.show,.picker-overlay.show,.settings-screen.show')].length > 0; document.body.classList.toggle('pulse-modal-open', open); };
+  const syncModalState = () => { const open = [...document.querySelectorAll('.datetime-modal.show,.picker-overlay.show,.settings-screen.show,.moderator-picker-overlay.show,.participant-profile-modal.show,.organizer-dashboard.show')].length > 0; document.body.classList.toggle('pulse-modal-open', open); };
   new MutationObserver(syncModalState).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
   syncModalState();
   const sync = () => { localStorage.setItem('eventhub_favorites', JSON.stringify([...favorites])); localStorage.setItem('eventhub_likes', JSON.stringify([...liked])); };
