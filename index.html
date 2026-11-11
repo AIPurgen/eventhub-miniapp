@@ -2051,7 +2051,14 @@ void bootstrapMiniApp();
       tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='calendar'){const ev=events.find(item=>String(item.id)===String(id)); if(ev) addEventToCalendar(ev);} sync(); });
       if(liked.has(id)){tools.children[0].classList.add('is-liked');tools.children[0].textContent='♥ Лайк';} if(favorites.has(id)){tools.children[1].classList.add('is-liked');tools.children[1].textContent='★ Сохранено';}
     });
-  list.querySelectorAll('.event-card').forEach(card=>{const title=(card.querySelector('.event-title')?.textContent||'').toLowerCase();const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1]||title;const joined=card.textContent.includes('Вы записаны');const free=card.textContent.toLowerCase().includes('бесплатно');const visible=(!query||title.includes(query))&&(filter==='all'||(filter==='saved'&&favorites.has(id))||(filter==='joined'&&joined)||(filter==='free'&&free)||(filter==='soon'&&card.querySelector('.event-date-block')));card.style.display=visible?'':'none';});
+  const cards = [...list.querySelectorAll('.event-card')];
+  let visibleCards = 0;
+  cards.forEach(card=>{const title=(card.querySelector('.event-title')?.textContent||'').toLowerCase();const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1]||title;const joined=card.textContent.includes('Вы записаны');const free=card.textContent.toLowerCase().includes('бесплатно');const visible=(!query||title.includes(query))&&(filter==='all'||(filter==='saved'&&favorites.has(id))||(filter==='joined'&&joined)||(filter==='free'&&free)||(filter==='soon'&&card.querySelector('.event-date-block')));card.style.display=visible?'':'none';if(visible)visibleCards++;});
+  const emptyId = 'pulseFilterEmpty';
+  const existingEmpty = document.getElementById(emptyId);
+  if (filter === 'saved' && cards.length && visibleCards === 0) {
+    if (!existingEmpty) { const empty = document.createElement('div'); empty.id = emptyId; empty.className = 'empty'; empty.innerHTML = '<h3>В избранном пока пусто</h3><p>Сохраняйте понравившиеся события, чтобы быстро найти их здесь.</p>'; list.appendChild(empty); }
+  } else if (existingEmpty) existingEmpty.remove();
   };
   new MutationObserver(decorate).observe(list,{childList:true,subtree:true});
   document.addEventListener('input',e=>{if(e.target.id==='pulseSearch'){query=e.target.value.trim().toLowerCase();decorate();}});
