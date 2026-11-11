@@ -1261,6 +1261,22 @@ async function renderReminderStatus(eventId, detailGeneration){
   }
   detailInfo.appendChild(panel);
 }
+const FOLLOWUP_API='https://n8n.arima.ru/webhook/eventhub-followup-api-4d7a2c';
+async function followupRequest(action,eventId){
+  const auth=accessToken?{access_token:accessToken,user}:{tg_init_data:tg?.initData||'',user};
+  const response=await fetch(FOLLOWUP_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data:{event_id:eventId},auth,meta:{request_id:'followup-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)}})});
+  const raw=await response.text(); const parsed=raw?JSON.parse(raw):{}; return parsed.result||parsed||{};
+}
+async function renderFollowupStatus(eventId,detailGeneration,isJoined){
+  const detailInfo=document.getElementById('detailInfo'); if(!detailInfo||detailGeneration!==eventDetailGeneration||!isJoined)return;
+  document.getElementById('eventFollowupPanel')?.remove();
+  const result=await followupRequest('status',eventId); if(detailGeneration!==eventDetailGeneration||result.ok===false)return;
+  const data=result.data||result; const panel=document.createElement('div'); panel.id='eventFollowupPanel'; panel.className='event-description-block'; panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
+  const title=document.createElement('div'); title.className='event-section-label'; title.textContent='Сообщения после встречи'; panel.appendChild(title);
+  const text=document.createElement('div'); text.style.cssText='margin-top:6px;color:var(--secondary);font-size:13px;line-height:1.4;'; text.textContent='Получить один вопрос для отзыва после завершения события. Сообщения можно отключить в любой момент.'; panel.appendChild(text);
+  const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.style.marginTop='10px'; const opted=Boolean(data.opted_in); button.textContent=opted?'Не присылать сообщения':'Получать сообщение после встречи';
+  button.onclick=async()=>{button.disabled=true;const next=await followupRequest(opted?'unsubscribe':'subscribe',eventId);if(next.ok!==false){showToast(opted?'Сообщения отключены':'Подписка включена','success');await renderFollowupStatus(eventId,detailGeneration,isJoined);}else{button.disabled=false;notifyUser(next.error||'Не удалось изменить подписку');}}; panel.appendChild(button); detailInfo.appendChild(panel);
+}
 function showReminderSubscribe(eventId, detailGeneration){
   if(detailGeneration !== eventDetailGeneration) return;
   const actions=document.querySelector('.event-detail-actions');
@@ -1956,6 +1972,7 @@ window.openEvent = async (id) => {
     renderSocialStats(id);
     renderWaitlistStatus(id, detailGeneration, placesFree);
     renderReminderStatus(id, detailGeneration);
+    renderFollowupStatus(id, detailGeneration, Boolean(isJoined));
     showAttendanceManage(ev, detailGeneration);
 
     let buttonText = 'Присоединиться';
