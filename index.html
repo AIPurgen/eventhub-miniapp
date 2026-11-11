@@ -1121,12 +1121,23 @@ function getStartParam(){
 function captureReferral(){
   const raw = String(getStartParam() || '');
   const match = raw.match(/^event[_-]([0-9a-f-]+?)(?:[_-]ref[_-]([0-9]+))?$/i);
-  if (!match) return;
+  if (!match) return null;
   const eventId = match[1];
   const inviterId = match[2] || '';
   localStorage.setItem(SOCIAL_EVENT_KEY, eventId);
   localStorage.setItem(SOCIAL_REFERRAL_KEY, raw);
   window.eventhubReferral = { event_id: eventId, inviter_id: inviterId, token: raw };
+  window.eventhubPendingEventId = eventId;
+  return window.eventhubReferral;
+}
+function openPendingReferralEvent(){
+  const eventId = String(window.eventhubPendingEventId || localStorage.getItem(SOCIAL_EVENT_KEY) || '');
+  if (!eventId || !Array.isArray(events) || !events.length) return false;
+  const event = events.find(item => String(item?.id) === eventId);
+  if (!event) return false;
+  window.eventhubPendingEventId = '';
+  window.openEvent?.(event.id);
+  return true;
 }
 function getReferralToken(eventId){
   const savedEvent = localStorage.getItem(SOCIAL_EVENT_KEY) || '';
@@ -1529,6 +1540,7 @@ async function loadEvents() {
         events = webhookCollection(eventsRes, ['events']);
         eventsState = 'ready';
         renderEventsState();
+        openPendingReferralEvent();
         return true;
     }).catch(error => {
         events = previousEvents;
@@ -2080,12 +2092,23 @@ void bootstrapMiniApp();
   const emptyId = 'pulseFilterEmpty';
   const existingEmpty = document.getElementById(emptyId);
   if ((filter !== 'all' || query) && cards.length && visibleCards === 0) {
-    if (!existingEmpty) { const empty = document.createElement('div'); empty.id = emptyId; empty.className = 'empty'; const heading = query ? 'Ничего не найдено' : ({saved:'В избранном пока пусто', joined:'Нет событий с вашим участием', free:'Бесплатных событий пока нет', soon:'Ближайших событий пока нет'}[filter] || 'Ничего не найдено'); const description = query ? 'Попробуйте изменить поисковый запрос.' : 'Попробуйте выбрать другой фильтр или вернитесь ко всем событиям.'; empty.innerHTML = '<h3>' + heading + '</h3><p>' + description + '</p>'; list.appendChild(empty); }
+    const heading = query ? 'Ничего не найдено' : ({saved:'В избранном пока пусто', joined:'Нет событий с вашим участием', free:'Бесплатных событий пока нет', soon:'Ближайших событий пока нет'}[filter] || 'Ничего не найдено');
+    const description = query ? 'Попробуйте изменить поисковый запрос.' : 'Попробуйте выбрать другой фильтр или вернитесь ко всем событиям.';
+    const showClearSearch = Boolean(query && visibleCards === 0);
+    const stateKey = [heading, description, showClearSearch].join('|');
+    const empty = existingEmpty || document.createElement('div');
+    if (empty.dataset.pulseEmptyState !== stateKey) {
+      empty.id = emptyId;
+      empty.className = 'empty';
+      empty.dataset.pulseEmptyState = stateKey;
+      empty.innerHTML = '<h3>' + heading + '</h3><p>' + description + '</p>' + (showClearSearch ? '<button type="button" data-pulse-action="clear-search">Очистить поиск</button>' : '');
+      if (!existingEmpty) list.appendChild(empty);
+    }
   } else if (existingEmpty) existingEmpty.remove();
   };
   new MutationObserver(decorate).observe(list,{childList:true,subtree:true});
   document.addEventListener('input',e=>{if(e.target.id==='pulseSearch'){query=e.target.value.trim().toLowerCase();decorate();}});
-  document.addEventListener('click',e=>{const chip=e.target.closest('[data-pulse-filter]');if(chip){setPulseSection('events',chip.dataset.pulseFilter);return;}const nav=e.target.closest('[data-pulse-nav]');if(!nav)return;const section=nav.dataset.pulseNav;if(section==='events'){setPulseSection('events','all');return;}if(section==='saved'){setPulseSection('saved','saved');toast('Показаны сохранённые события');return;}setPulseSection(section);});
+  document.addEventListener('click',e=>{const clearSearch=e.target.closest('[data-pulse-action="clear-search"]');if(clearSearch){const search=document.getElementById('pulseSearch');if(search)search.value='';query='';decorate();return;}const chip=e.target.closest('[data-pulse-filter]');if(chip){setPulseSection('events',chip.dataset.pulseFilter);return;}const nav=e.target.closest('[data-pulse-nav]');if(!nav)return;const section=nav.dataset.pulseNav;if(section==='events'){setPulseSection('events','all');return;}if(section==='saved'){setPulseSection('saved','saved');toast('Показаны сохранённые события');return;}setPulseSection(section);});
   syncNavigationState();
   setTimeout(decorate, 250);
 })();
