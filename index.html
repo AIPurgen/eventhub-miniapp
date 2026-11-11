@@ -1994,6 +1994,8 @@ async function bootstrapMiniApp() {
   if (hasTelegramBridge && !hasTelegramContext) {
     // Do not send an auth request with an empty tg_init_data value. That can
     authState = 'error';
+    events = [];
+    eventsState = 'idle';
     recordAuthTrace('bootstrap_timeout', {
       attempts: telegramBootstrapAttempts,
       has_bridge: hasTelegramBridge,
@@ -2002,6 +2004,7 @@ async function bootstrapMiniApp() {
     });
     // only produce a backend rejection and makes the client appear to loop.
     renderOwnerProfile();
+    renderEventsState();
     telegramBootstrapStarted = true;
     showAuthError('Telegram не передал подписанные данные Mini App. Закройте окно и откройте приложение из Telegram ещё раз.');
     if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
