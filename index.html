@@ -656,6 +656,9 @@ let accessToken = (() => { try { return sessionStorage.getItem('eventhub_access_
 let telegramAuthInFlight = null;
 let appInitInFlight = null;
 let authState = 'pending';
+let eventsState = 'idle';
+let eventsLoadInFlight = null;
+const rsvpInFlight = new Set();
 
 function refreshTelegramContext() {
     const webApp = window.Telegram?.WebApp;
@@ -676,6 +679,7 @@ let events = [];
 let selectedDate = null;
 let selectedHour = null;
 let currentEventId = null;
+let eventDetailGeneration = 0;
 let guestCount = 0;
 let guestTotalBase = 0;
 let socialCurrentEvent = null;
@@ -864,16 +868,16 @@ async function api(entity, action, data = {}) {
           shape: webhookShape(parsed),
           parsed_error: webhookError(parsed) || null
         });
-        if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), http_status: res.status };
-        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', empty_response: true, http_status: res.status };
-        if (webhookError(parsed)) return { success: false, error: webhookError(parsed), http_status: res.status, webhook_response: parsed };
+        if (!res.ok) return { success: false, error: typeof parsed === 'string' ? parsed : (parsed?.message || parsed?.error || raw || ('HTTP ' + res.status)), error_kind: 'http', request_id: requestId, http_status: res.status };
+        if (parsed === null || parsed === '') return { success: false, error: 'Сервер вернул пустой ответ', error_kind: 'empty', empty_response: true, request_id: requestId, http_status: res.status };
+        if (webhookError(parsed)) return { success: false, error: webhookError(parsed), error_kind: 'server', request_id: requestId, http_status: res.status, webhook_response: parsed };
         return parsed;
     } catch (e) {
         console.error(e);
       if (e?.name !== 'AbortError') recordAuthTrace('api_request_exception', { request_id: requestId, entity, action, elapsed_ms: Date.now() - requestStartedAt, error_name: e?.name || 'Error', error_message: String(e?.message || 'request failed').slice(0, 240) });
         const error = document.getElementById('authError');
         if (error) error.textContent = "Нет связи с сервером";
-        return { success: false, error: "Нет связи с сервером" };
+        return { success: false, error: e?.name === 'AbortError' ? 'Превышено время ожидания ответа сервера' : 'Нет связи с сервером', error_kind: e?.name === 'AbortError' ? 'timeout' : 'network', request_id: requestId };
     }
 }
 
@@ -1213,9 +1217,31 @@ function toggleEventAdminMenu(){if(!isAdmin)return;const btn=document.getElement
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
 function showToast(message, tone = 'default') { const stack = document.getElementById('toastStack'); if (!stack || !message) return; const toast = document.createElement('div'); toast.className = 'toast'; if (tone === 'success') toast.style.background = 'rgba(20,142,103,.94)'; if (tone === 'error') toast.style.background = 'rgba(194,57,78,.94)'; toast.textContent = message; stack.appendChild(toast); setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => toast.remove(), 220); }, 2800); }
 function showSkeleton() { const list = document.getElementById('eventsList'); if (list) list.innerHTML = '<div class="skeleton-list"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>'; }
+function renderEventsState() {
+    const list = document.getElementById('eventsList');
+    if (!list) return;
+    if (eventsState === 'loading' && !events.length) { showSkeleton(); return; }
+    if (eventsState === 'error') {
+        list.innerHTML = '<div class="empty"><h3>Не удалось загрузить события</h3><p>Проверьте соединение и повторите попытку.</p><button type="button" class="btn-primary" onclick="loadEvents()" ' + (eventsLoadInFlight ? 'disabled' : '') + '>Повторить</button></div>';
+        return;
+    }
+    render();
+}
 function applyTheme(theme) { document.documentElement.classList.toggle('dark', theme === 'dark'); }
 
 function showAuthError(message) { const error = document.getElementById('authError'); if (error) error.textContent = message || ''; }
+function isExplicitInvalidSession(response) {
+  if (!response) return false;
+  const invalidPattern = /invalid[_ -]?session|session[_ -]?(expired|invalid)|expired[_ -]?token|invalid[_ -]?token|unauthori[sz]ed|невалидн|ист[её]к.*(сесс|токен)|сесс.*(истек|недейств)|токен.*(истек|недейств)/i;
+  if (typeof response === 'string') return invalidPattern.test(response);
+  if (typeof response !== 'object') return false;
+  const status = Number(response.http_status);
+  if (status === 401 || status === 403) return true;
+  const values = [response.code, response.error_code, response.status, response.error, response.message, response.detail]
+    .filter(value => value !== undefined && value !== null)
+    .map(value => String(value));
+  return values.some(value => invalidPattern.test(value));
+}
 function setAuthVisible(visible) { document.getElementById('authShell').classList.toggle('hidden', !visible); document.getElementById('authLogout').style.display = visible ? 'none' : 'block'; }
 function isTelegramMiniApp() { return Boolean(window.Telegram?.WebApp || telegramInitData); }
 function setAuthMode(mode) { document.querySelectorAll('[data-auth-mode]').forEach((button) => button.classList.toggle('active', button.dataset.authMode === mode)); document.querySelectorAll('.register-only').forEach((field) => field.style.display = mode === 'register' ? 'block' : 'none'); document.getElementById('authSubmit').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти'; showAuthError(''); window.authMode = mode; }
@@ -1487,6 +1513,36 @@ function syncAdminVisibility() {
   document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !visible);
 }
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
+async function loadEvents() {
+    if (eventsLoadInFlight) return eventsLoadInFlight;
+    const previousEvents = events;
+    eventsState = 'loading';
+    renderEventsState();
+    eventsLoadInFlight = api("events", "list").then(eventsRes => {
+        if (eventsRes?.success === false) {
+            events = previousEvents;
+            eventsState = 'error';
+            showToast(eventsRes.error || 'Не удалось загрузить события', 'error');
+            renderEventsState();
+            return false;
+        }
+        events = webhookCollection(eventsRes, ['events']);
+        eventsState = 'ready';
+        renderEventsState();
+        return true;
+    }).catch(error => {
+        events = previousEvents;
+        eventsState = 'error';
+        showToast(error?.message || 'Не удалось загрузить события', 'error');
+        renderEventsState();
+        return false;
+    }).finally(() => {
+        eventsLoadInFlight = null;
+        if (eventsState === 'error') renderEventsState();
+    });
+    return eventsLoadInFlight;
+}
+
 async function init(forceTelegramMode = false) {
     if (appInitInFlight) return appInitInFlight;
     appInitInFlight = (async () => {
@@ -1515,18 +1571,35 @@ async function init(forceTelegramMode = false) {
         normalized_is_admin: authenticatedUser ? userIsAdmin(authenticatedUser) : false,
         role_present: Boolean(authenticatedUser?.role || authenticatedUser?.user_role || authenticatedUser?.userRole)
       });
-      if (!authenticatedUser && accessToken && !hasValidTelegramAuth) {
+      if (!authenticatedUser) {
+        const invalidSession = isExplicitInvalidSession(authRes);
+        authState = invalidSession ? 'error' : 'transient_error';
+        if (invalidSession) {
+          user = {};
+          isAdmin = false;
+          events = [];
+          eventsState = 'idle';
           accessToken = '';
           try { sessionStorage.removeItem('eventhub_access_token'); } catch (_) {}
-      }
-      if (!authenticatedUser) {
-        authState = 'error';
-        recordAuthTrace('auth_failed', { opened_in_telegram: openedInTelegram, response_shape: webhookShape(authRes), response_error: webhookError(authRes) || null });
+          syncAdminVisibility();
+          renderOwnerProfile();
+        }
+        recordAuthTrace('auth_failed', {
+          opened_in_telegram: openedInTelegram,
+          response_shape: webhookShape(authRes),
+          response_error: webhookError(authRes) || null,
+          error_kind: authRes?.error_kind || null,
+          invalid_session: invalidSession
+        });
         // В Telegram Mini App не переключаемся на логин/пароль: Telegram должен
         // авторизовать пользователя автоматически. Форма предназначена только
         // для обычного открытия страницы по прямой ссылке.
-        if (!openedInTelegram && !forceTelegramMode) setAuthVisible(true);
-        else showAuthError('Не удалось автоматически авторизоваться через Telegram. Закройте Mini App и откройте его снова из Telegram.');
+        if (invalidSession && !openedInTelegram && !forceTelegramMode) setAuthVisible(true);
+        else if (invalidSession) showAuthError('Сессия истекла. Закройте Mini App и откройте его снова из Telegram.');
+        else {
+          renderEventsState();
+          showAuthError('Временная ошибка соединения. Повторите попытку позже.');
+        }
         return false;
       }
       // Keep Telegram identity, but let the server's validated account win for
@@ -1545,12 +1618,7 @@ async function init(forceTelegramMode = false) {
       syncAdminVisibility();
       if (isAdmin) await loadModerators();
 
-      const eventsRes = await api("events", "list");
-      if (eventsRes?.success === false && !eventsRes.empty_response) {
-        showToast(`Ошибка webhook: ${eventsRes.error || 'не удалось загрузить события'}`, 'error');
-    }
-      events = webhookCollection(eventsRes, ['events']);
-      render();
+      await loadEvents();
       return true;
     // Always start on the main event list. Referral data is retained for a later join action.
     })().finally(() => { appInitInFlight = null; });
@@ -1628,6 +1696,7 @@ window.openEvent = async (id) => {
     if (!ev) return;
 
     currentEventId = id;
+    const detailGeneration = ++eventDetailGeneration;
     socialCurrentEvent = ev;
     trackSocial("view", { event_id: id, referral_token: getReferralToken(id) });
 
@@ -1761,11 +1830,19 @@ window.openEvent = async (id) => {
 
     actionBtn.onclick = async () => {
         if (actionBtn.disabled) { notifyUser("В событии больше нет свободных мест"); return; }
+        if (rsvpInFlight.has(String(id))) return;
+        rsvpInFlight.add(String(id));
+        actionBtn.disabled = true;
+        const originalText = actionBtn.textContent;
+        actionBtn.textContent = 'Сохраняем…';
         let res;
+        let succeeded = false;
+        try {
 
         if (actionType === 'leave') {
             res = await api("events", "leave", { event_id: id, user_id: user?.id });
             if (isWebhookSuccess(res, "leave_event")) {
+                succeeded = true;
                 tg.showAlert("Вы отписались от события");
             } else {
                 tg.showAlert("Не удалось отписаться");
@@ -1775,6 +1852,7 @@ window.openEvent = async (id) => {
             const payload = { event_id: id, user_id: user?.id, guests: guestCount, referral_token: getReferralToken(id) };
             res = await api("events", "join", payload);
             if (isWebhookSuccess(res, "join_event")) {
+                succeeded = true;
                 trackSocial("join", { event_id: id, event_date: ev.event_date, referral_token: getReferralToken(id), guests: guestCount });
                 if (isJoined) {
                     tg.showAlert("Количество гостей обновлено");
@@ -1787,8 +1865,17 @@ window.openEvent = async (id) => {
             }
         }
 
-        closeEventDetail();
-        await init();
+        } finally {
+            rsvpInFlight.delete(String(id));
+            if (!succeeded && detailGeneration === eventDetailGeneration) {
+                actionBtn.disabled = false;
+                actionBtn.textContent = originalText;
+            }
+        }
+        if (succeeded && detailGeneration === eventDetailGeneration) {
+            closeEventDetail();
+            await init();
+        }
     };
 
     document.getElementById('detailDeleteBtn').style.display = isAdmin ? 'block' : 'none';
