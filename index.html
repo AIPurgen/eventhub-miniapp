@@ -1168,6 +1168,70 @@ async function renderSocialStats(eventId){
   detailInfo.insertAdjacentHTML('beforeend','<div class="social-stats" aria-label="Статистика распространения"><div class="social-stats-grid">'+iconStat('👁',stats.views,'Просмотров')+iconStat('↗',stats.shares,'Поделились')+iconStat('✓',stats.joins,'Регистраций')+iconStat('⌁',stats.referral_joins,'От приглашений')+iconStat('♟',stats.invited_users,'Новых участников')+iconStat('♧',stats.guest_slots,'Гостей')+'</div><button class="social-stats-refresh" type="button" title="Обновить статистику" aria-label="Обновить статистику" onclick="refreshSocialStats()">↻</button></div>');
  }
 async function refreshSocialStats(){document.querySelector('.social-stats')?.remove();if(currentEventId)await renderSocialStats(currentEventId);}
+function waitlistPayloadValue(response){
+  const value = webhookValue(response, ['waitlist_status','join_waitlist','leave_waitlist']);
+  return value && typeof value === 'object' ? value : null;
+}
+function waitlistStatusText(status, position){
+  if(status === 'queued') return position ? 'Вы в очереди · позиция ' + position : 'Вы в очереди';
+  if(status === 'promoted') return 'Место освободилось — вы записаны';
+  if(status === 'confirmed') return 'Вы записаны на событие';
+  return '';
+}
+async function renderWaitlistStatus(eventId, detailGeneration, placesFree){
+  const detailInfo = document.getElementById('detailInfo');
+  if(!detailInfo || detailGeneration !== eventDetailGeneration) return;
+  const old = document.getElementById('eventWaitlistPanel');
+  old?.remove();
+  const response = await api('events','waitlist_status',{event_id:eventId});
+  if(detailGeneration !== eventDetailGeneration) return;
+  const status = waitlistPayloadValue(response);
+  if(!status || status.status === 'none' || (status.status === 'confirmed' && placesFree !== 0)) return;
+  const panel = document.createElement('div');
+  panel.id = 'eventWaitlistPanel';
+  panel.className = 'event-description-block';
+  panel.style.cssText = 'margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
+  const isQueued = status.status === 'queued';
+  const title = document.createElement('div');
+  title.className = 'event-section-label';
+  title.textContent = isQueued ? waitlistStatusText(status.status,status.position) : waitlistStatusText(status.status,status.position);
+  panel.appendChild(title);
+  if(isQueued){
+    const leave = document.createElement('button');
+    leave.type='button'; leave.className='btn-secondary'; leave.textContent='Выйти из очереди';
+    leave.style.marginTop='10px';
+    leave.onclick=async()=>{
+      leave.disabled=true;
+      const result=await api('events','waitlist_leave',{event_id:eventId});
+      const value=waitlistPayloadValue(result);
+      if(value?.status==='cancelled'){notifyUser('Вы вышли из очереди');panel.remove();}
+      else {leave.disabled=false;notifyUser(result?.error||'Не удалось выйти из очереди');}
+    };
+    panel.appendChild(leave);
+  }
+  detailInfo.appendChild(panel);
+}
+async function showWaitlistJoin(eventId, detailGeneration){
+  if(detailGeneration !== eventDetailGeneration) return;
+  const detailInfo=document.getElementById('detailInfo');
+  const actions=document.querySelector('.event-detail-actions');
+  if(!detailInfo || !actions || document.getElementById('eventWaitlistJoin')) return;
+  const button=document.createElement('button');
+  button.id='eventWaitlistJoin'; button.type='button'; button.className='event-detail-action';
+  button.textContent='Встать в очередь'; button.style.marginTop='10px';
+  button.onclick=async()=>{
+    button.disabled=true; button.textContent='Сохраняем…';
+    const result=await api('events','waitlist_join',{event_id:eventId,guests:guestCount});
+    const value=waitlistPayloadValue(result);
+    if(value?.status==='queued'){
+      notifyUser(value.position ? 'Вы в очереди. Позиция: '+value.position : 'Вы добавлены в очередь');
+      button.remove(); await renderWaitlistStatus(eventId,detailGeneration,0);
+    } else if(value?.status==='promoted' || value?.status==='confirmed'){
+      notifyUser('Место уже доступно — обновляем событие'); await init();
+    } else {button.disabled=false;button.textContent='Встать в очередь';notifyUser(result?.error||'Не удалось встать в очередь');}
+  };
+  actions.appendChild(button);
+}
 async function shareEvent(eventId){
   const ev = events.find(item => String(item.id) === String(eventId));
   if (!ev) return;
@@ -1820,6 +1884,7 @@ window.openEvent = async (id) => {
     const placesFree = isUnlimited ? null : (ev.available_places ?? ev.free_places ?? (ev.max_participants != null && maxParticipants > 0 ? Math.max(0, maxParticipants - Number(ev.participants_count || 0)) : null));
     renderSocialActions(ev, isJoined, placesFree);
     renderSocialStats(id);
+    renderWaitlistStatus(id, detailGeneration, placesFree);
 
     let buttonText = 'Присоединиться';
     let actionType = 'join';
@@ -1839,6 +1904,7 @@ window.openEvent = async (id) => {
     actionBtn.disabled = eventIsFull;
     actionBtn.classList.toggle("is-full", eventIsFull);
     if (eventIsFull) actionBtn.textContent = "Мест нет";
+    if (eventIsFull) showWaitlistJoin(id, detailGeneration);
 
     actionBtn.onclick = async () => {
         if (actionBtn.disabled) { notifyUser("В событии больше нет свободных мест"); return; }
