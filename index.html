@@ -1929,10 +1929,11 @@ function renderOwnerProfile(){
   avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url);
 }
 function openSettings(){
+  window.__pulseNavigation?.setSection('profile','all');
   renderOwnerProfile(); profileSettings=getProfileSettings(); const tgName=[user?.first_name,user?.last_name].filter(Boolean).join(' ') || user?.login || 'Профиль пользователя'; const handle=user?.username ? '@'+user.username : (user?.login || 'Не указан');
   document.getElementById('profileTelegramName').textContent=tgName; document.getElementById('profileTelegramUsername').textContent=handle; document.getElementById('profileTelegramFullName').value=tgName; document.getElementById('profileTelegramHandle').value=handle; document.getElementById('profileRole').value=profileRole(); document.getElementById('profileDisplayName').value=profileSettings.display_name || ''; document.getElementById('profileContact').value=profileSettings.contact || ''; document.getElementById('profileBio').value=profileSettings.bio || ''; avatarMarkup(document.getElementById('profileAvatar'),user?.photo_url); updateProfileThemeButtons(); document.getElementById('settingsScreen').classList.add('show');
 }
-function closeSettings(){ document.getElementById('settingsScreen').classList.remove('show'); }
+function closeSettings(){ document.getElementById('settingsScreen').classList.remove('show'); window.__pulseNavigation?.setSection('events','all'); }
 function setProfileTheme(theme){ localStorage.setItem('eventhub_theme',theme); applyTheme(theme); updateProfileThemeButtons(); }
 function updateProfileThemeButtons(){ const dark=document.documentElement.classList.contains('dark'); document.getElementById('settingsLightTheme')?.classList.toggle('active',!dark); document.getElementById('settingsDarkTheme')?.classList.toggle('active',dark); }
 function saveProfileSettings(){ profileSettings={display_name:document.getElementById('profileDisplayName').value.trim(),contact:document.getElementById('profileContact').value.trim(),bio:document.getElementById('profileBio').value.trim()}; localStorage.setItem(profileStorageKey(),JSON.stringify(profileSettings)); renderOwnerProfile(); closeSettings(); showToast('Настройки профиля сохранены','success'); }
@@ -2033,8 +2034,30 @@ void bootstrapMiniApp();
   if (!list) return;
   const hero = document.querySelector('.header');
   if (hero && !document.querySelector('.pulse-hero')) hero.insertAdjacentHTML('afterend', "\n<section class=\"pulse-hero\" aria-label=\"Обзор событий\"><div class=\"pulse-hero-kicker\">Event Pulse · сегодня</div><h2>Люди, идеи и поводы встретиться</h2><p>Выберите настроение, найдите событие и присоединяйтесь одним касанием.</p></section>\n<input id=\"pulseSearch\" class=\"pulse-search\" type=\"search\" placeholder=\"Поиск по событиям…\" aria-label=\"Поиск по событиям\">\n<div class=\"pulse-tools\" role=\"tablist\" aria-label=\"Фильтр событий\"><button class=\"pulse-chip active\" data-pulse-filter=\"all\">Все</button><button class=\"pulse-chip\" data-pulse-filter=\"soon\">Скоро</button><button class=\"pulse-chip\" data-pulse-filter=\"free\">Бесплатно</button><button class=\"pulse-chip\" data-pulse-filter=\"joined\">Я участвую</button></div>\n");
-  document.body.insertAdjacentHTML('beforeend','<nav class="pulse-bottom-nav" aria-label="Основная навигация"><button class="active" data-pulse-nav="events"><span class="pulse-nav-icon">✦</span>События</button><button data-pulse-nav="saved"><span class="pulse-nav-icon">♡</span>Избранное</button><button class="organizer-dashboard-nav hidden" data-pulse-nav="organizer" onclick="openOrganizerDashboard()"><span class="pulse-nav-icon">▥</span>Аналитика</button><button data-pulse-nav="profile" onclick="openSettings()"><span class="pulse-nav-icon">◉</span>Профиль</button></nav><div id="pulseToast" class="pulse-toast" role="status"></div>');
+  document.body.insertAdjacentHTML('beforeend','<nav class="pulse-bottom-nav" aria-label="Основная навигация"><button class="active" data-pulse-nav="events" aria-current="page"><span class="pulse-nav-icon">✦</span>События</button><button data-pulse-nav="saved" aria-current="false"><span class="pulse-nav-icon">♡</span>Избранное</button><button class="organizer-dashboard-nav hidden" data-pulse-nav="organizer" aria-current="false" onclick="openOrganizerDashboard()"><span class="pulse-nav-icon">▥</span>Аналитика</button><button data-pulse-nav="profile" aria-current="false" onclick="openSettings()"><span class="pulse-nav-icon">◉</span>Профиль</button></nav><div id="pulseToast" class="pulse-toast" role="status"></div>');
   let filter = 'all', query = '';
+  let currentSection = 'events';
+  const navButtons = () => document.querySelectorAll('[data-pulse-nav]');
+  const filterChips = () => document.querySelectorAll('[data-pulse-filter]');
+  const syncNavigationState = () => {
+    navButtons().forEach(button => {
+      const active = button.dataset.pulseNav === currentSection;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+    filterChips().forEach(chip => {
+      const active = currentSection === 'events' && chip.dataset.pulseFilter === filter;
+      chip.classList.toggle('active', active);
+      chip.setAttribute('aria-pressed', String(active));
+    });
+  };
+  const setPulseSection = (section, nextFilter = filter) => {
+    currentSection = section;
+    filter = nextFilter;
+    syncNavigationState();
+    decorate();
+  };
+  window.__pulseNavigation = { setSection: setPulseSection, sync: syncNavigationState };
   const favorites = new Set(JSON.parse(localStorage.getItem('eventhub_favorites') || '[]'));
   const liked = new Set(JSON.parse(localStorage.getItem('eventhub_likes') || '[]'));
   const toast = (message) => { const el=document.getElementById('pulseToast'); if(!el)return; el.textContent=message; el.classList.add('show'); clearTimeout(window.__pulseToast); window.__pulseToast=setTimeout(()=>el.classList.remove('show'),1800); };
@@ -2062,7 +2085,8 @@ void bootstrapMiniApp();
   };
   new MutationObserver(decorate).observe(list,{childList:true,subtree:true});
   document.addEventListener('input',e=>{if(e.target.id==='pulseSearch'){query=e.target.value.trim().toLowerCase();decorate();}});
-  document.addEventListener('click',e=>{const chip=e.target.closest('[data-pulse-filter]');if(chip){filter=chip.dataset.pulseFilter;document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.toggle('active',x===chip));decorate();}const nav=e.target.closest('[data-pulse-nav]');if(nav&&nav.dataset.pulseNav==='saved'){filter='saved';document.querySelectorAll('[data-pulse-filter]').forEach(x=>x.classList.remove('active'));decorate();toast('Показаны сохранённые события');}});
+  document.addEventListener('click',e=>{const chip=e.target.closest('[data-pulse-filter]');if(chip){setPulseSection('events',chip.dataset.pulseFilter);return;}const nav=e.target.closest('[data-pulse-nav]');if(!nav)return;const section=nav.dataset.pulseNav;if(section==='events'){setPulseSection('events','all');return;}if(section==='saved'){setPulseSection('saved','saved');toast('Показаны сохранённые события');return;}setPulseSection(section);});
+  syncNavigationState();
   setTimeout(decorate, 250);
 })();
 </script><script>
@@ -2086,8 +2110,8 @@ void bootstrapMiniApp();
     rows.sort((a,b)=>Number(b.stats?.referral_joins||0)-Number(a.stats?.referral_joins||0));
     rows.forEach(({ev,stats})=>{const row=document.createElement('div');row.className='organizer-event-row';const info=document.createElement('div');const name=document.createElement('div');name.className='organizer-event-name';name.textContent=ev.title||'Без названия';const date=document.createElement('div');date.className='organizer-event-date';date.textContent=ev.event_date?new Date(ev.event_date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';const open=document.createElement('button');open.className='organizer-event-open';open.type='button';open.textContent='Открыть событие';open.onclick=()=>{window.closeOrganizerDashboard?.();window.openEvent(ev.id);};info.append(name,date,open);const metrics=document.createElement('div');metrics.className='organizer-event-metrics';metrics.append(metric(stats.views,'Просм.'),metric(stats.shares,'Шары'),metric(stats.joins,'Записи'),metric(stats.referral_joins,'Реф.'));row.append(info,metrics);list.appendChild(row);});
   }
-  window.openOrganizerDashboard=function(){if(!isAdmin)return;const root=document.getElementById('organizerDashboard');if(!root)return;root.classList.add('show');document.body.classList.add('pulse-modal-open');loadOrganizerDashboard();};
-  window.closeOrganizerDashboard=function(){document.getElementById('organizerDashboard')?.classList.remove('show');document.body.classList.remove('pulse-modal-open');document.querySelectorAll('[data-pulse-nav]').forEach(x=>x.classList.toggle('active',x.dataset.pulseNav==='events'));};
+  window.openOrganizerDashboard=function(){if(!isAdmin)return;const root=document.getElementById('organizerDashboard');if(!root)return;window.__pulseNavigation?.setSection('organizer','all');root.classList.add('show');document.body.classList.add('pulse-modal-open');loadOrganizerDashboard();};
+  window.closeOrganizerDashboard=function(){document.getElementById('organizerDashboard')?.classList.remove('show');document.body.classList.remove('pulse-modal-open');window.__pulseNavigation?.setSection('events','all');};
   const syncOrganizerNav=()=>{document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !isAdmin);};
   const mountDashboard=()=>{
     if(document.getElementById('organizerDashboard'))return true;
