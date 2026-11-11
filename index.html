@@ -1269,6 +1269,39 @@ function showReminderSubscribe(eventId, detailGeneration){
   button.onclick=async()=>{button.disabled=true;button.textContent='Сохраняем…';const result=await api('events','reminder_subscribe',{event_id:eventId,minutes_before:1440,timezone:localReminderTimezone()});const value=reminderPayloadValue(result);if(value?.status==='active'){button.remove();await renderReminderStatus(eventId,detailGeneration);}else{button.disabled=false;button.textContent='Напомнить за сутки';notifyUser(result?.error||'Не удалось включить напоминание');}};
   actions.appendChild(button);
 }
+function attendancePayloadValue(response){
+  const value=webhookValue(response,['attendance_status','attendance_list','check_in_participant','check_out_participant']);
+  return value && typeof value==='object' ? value : null;
+}
+function canManageAttendance(ev){
+  return Boolean(isAdmin || String(ev?.created_by || ev?.moderator_id || '')===String(user?.id || ''));
+}
+async function renderAttendanceList(ev, detailGeneration){
+  if(!canManageAttendance(ev) || detailGeneration!==eventDetailGeneration) return;
+  const detailInfo=document.getElementById('detailInfo'); if(!detailInfo)return;
+  document.getElementById('eventAttendancePanel')?.remove();
+  const response=await api('events','attendance_list',{event_id:ev.id});
+  if(detailGeneration!==eventDetailGeneration)return;
+  const data=attendancePayloadValue(response);
+  if(!data?.ok){notifyUser(data?.error==='attendance_forbidden'?'Недостаточно прав для посещаемости':(data?.error||'Не удалось загрузить посещаемость'));return;}
+  const panel=document.createElement('div'); panel.id='eventAttendancePanel'; panel.className='event-description-block'; panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
+  const head=document.createElement('div'); head.className='event-section-label'; head.textContent='Посещаемость · '+data.items.filter(x=>x.status==='checked_in').length+'/'+data.items.length; panel.appendChild(head);
+  const list=document.createElement('div'); list.style.cssText='display:grid;gap:8px;margin-top:10px;';
+  for(const item of (data.items||[])){
+    const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-radius:10px;background:var(--card);font-size:12px;';
+    const label=document.createElement('span'); label.textContent=String(item.user_id)+' · '+(item.status==='checked_in'?'пришёл':'не отмечен'); row.appendChild(label);
+    const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.textContent=item.status==='checked_in'?'Отметить выход':'Check-in';
+    button.onclick=async()=>{button.disabled=true;const action=item.status==='checked_in'?'attendance_check_out':'attendance_check_in';const result=await api('events',action,{event_id:ev.id,participant_id:item.user_id});const value=attendancePayloadValue(result);if(value?.ok){await renderAttendanceList(ev,detailGeneration);}else{button.disabled=false;notifyUser(value?.error||'Не удалось обновить посещаемость');}};
+    row.appendChild(button); list.appendChild(row);
+  }
+  panel.appendChild(list); detailInfo.appendChild(panel);
+}
+function showAttendanceManage(ev, detailGeneration){
+  if(!canManageAttendance(ev) || detailGeneration!==eventDetailGeneration)return;
+  const actions=document.querySelector('.event-detail-actions'); if(!actions || document.getElementById('eventAttendanceManage'))return;
+  const button=document.createElement('button'); button.id='eventAttendanceManage'; button.type='button'; button.className='event-detail-action'; button.textContent='Посещаемость'; button.style.marginTop='10px';
+  button.onclick=()=>renderAttendanceList(ev,detailGeneration); actions.appendChild(button);
+}
 async function shareEvent(eventId){
   const ev = events.find(item => String(item.id) === String(eventId));
   if (!ev) return;
@@ -1923,6 +1956,7 @@ window.openEvent = async (id) => {
     renderSocialStats(id);
     renderWaitlistStatus(id, detailGeneration, placesFree);
     renderReminderStatus(id, detailGeneration);
+    showAttendanceManage(ev, detailGeneration);
 
     let buttonText = 'Присоединиться';
     let actionType = 'join';
