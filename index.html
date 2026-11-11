@@ -2056,8 +2056,8 @@ void bootstrapMiniApp();
   cards.forEach(card=>{const title=(card.querySelector('.event-title')?.textContent||'').toLowerCase();const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1]||title;const joined=card.textContent.includes('Вы записаны');const free=card.textContent.toLowerCase().includes('бесплатно');const visible=(!query||title.includes(query))&&(filter==='all'||(filter==='saved'&&favorites.has(id))||(filter==='joined'&&joined)||(filter==='free'&&free)||(filter==='soon'&&card.querySelector('.event-date-block')));card.style.display=visible?'':'none';if(visible)visibleCards++;});
   const emptyId = 'pulseFilterEmpty';
   const existingEmpty = document.getElementById(emptyId);
-  if (filter === 'saved' && cards.length && visibleCards === 0) {
-    if (!existingEmpty) { const empty = document.createElement('div'); empty.id = emptyId; empty.className = 'empty'; empty.innerHTML = '<h3>В избранном пока пусто</h3><p>Сохраняйте понравившиеся события, чтобы быстро найти их здесь.</p>'; list.appendChild(empty); }
+  if ((filter !== 'all' || query) && cards.length && visibleCards === 0) {
+    if (!existingEmpty) { const empty = document.createElement('div'); empty.id = emptyId; empty.className = 'empty'; const heading = query ? 'Ничего не найдено' : ({saved:'В избранном пока пусто', joined:'Нет событий с вашим участием', free:'Бесплатных событий пока нет', soon:'Ближайших событий пока нет'}[filter] || 'Ничего не найдено'); const description = query ? 'Попробуйте изменить поисковый запрос.' : 'Попробуйте выбрать другой фильтр или вернитесь ко всем событиям.'; empty.innerHTML = '<h3>' + heading + '</h3><p>' + description + '</p>'; list.appendChild(empty); }
   } else if (existingEmpty) existingEmpty.remove();
   };
   new MutationObserver(decorate).observe(list,{childList:true,subtree:true});
