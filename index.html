@@ -1232,6 +1232,43 @@ async function showWaitlistJoin(eventId, detailGeneration){
   };
   actions.appendChild(button);
 }
+function reminderPayloadValue(response){
+  const value = webhookValue(response, ['event_reminder_status','subscribe_event_reminder','unsubscribe_event_reminder']);
+  return value && typeof value === 'object' ? value : null;
+}
+function localReminderTimezone(){
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (_) { return 'UTC'; }
+}
+async function renderReminderStatus(eventId, detailGeneration){
+  const detailInfo=document.getElementById('detailInfo');
+  if(!detailInfo || detailGeneration !== eventDetailGeneration) return;
+  document.getElementById('eventReminderPanel')?.remove();
+  const response=await api('events','reminder_status',{event_id:eventId});
+  if(detailGeneration !== eventDetailGeneration) return;
+  const status=reminderPayloadValue(response);
+  if(!status || status.status === 'none') return;
+  const panel=document.createElement('div');
+  panel.id='eventReminderPanel'; panel.className='event-description-block';
+  panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
+  const title=document.createElement('div'); title.className='event-section-label';
+  title.textContent=status.status==='active' ? 'Напоминание включено' : 'Напоминание отключено'; panel.appendChild(title);
+  if(status.status==='active'){
+    const meta=document.createElement('div'); meta.style.cssText='margin-top:6px;color:var(--secondary);font-size:12px;';
+    meta.textContent='За '+Number(status.minutes_before||1440)+' мин. · '+String(status.timezone||localReminderTimezone()); panel.appendChild(meta);
+    const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.textContent='Отключить напоминание'; button.style.marginTop='10px';
+    button.onclick=async()=>{button.disabled=true;const result=await api('events','reminder_unsubscribe',{event_id:eventId});const value=reminderPayloadValue(result);if(value?.status==='cancelled'){notifyUser('Напоминание отключено');panel.remove();}else{button.disabled=false;notifyUser(result?.error||'Не удалось отключить напоминание');}};
+    panel.appendChild(button);
+  }
+  detailInfo.appendChild(panel);
+}
+function showReminderSubscribe(eventId, detailGeneration){
+  if(detailGeneration !== eventDetailGeneration) return;
+  const actions=document.querySelector('.event-detail-actions');
+  if(!actions || document.getElementById('eventReminderSubscribe')) return;
+  const button=document.createElement('button'); button.id='eventReminderSubscribe'; button.type='button'; button.className='event-detail-action'; button.textContent='Напомнить за сутки'; button.style.marginTop='10px';
+  button.onclick=async()=>{button.disabled=true;button.textContent='Сохраняем…';const result=await api('events','reminder_subscribe',{event_id:eventId,minutes_before:1440,timezone:localReminderTimezone()});const value=reminderPayloadValue(result);if(value?.status==='active'){button.remove();await renderReminderStatus(eventId,detailGeneration);}else{button.disabled=false;button.textContent='Напомнить за сутки';notifyUser(result?.error||'Не удалось включить напоминание');}};
+  actions.appendChild(button);
+}
 async function shareEvent(eventId){
   const ev = events.find(item => String(item.id) === String(eventId));
   if (!ev) return;
@@ -1885,6 +1922,7 @@ window.openEvent = async (id) => {
     renderSocialActions(ev, isJoined, placesFree);
     renderSocialStats(id);
     renderWaitlistStatus(id, detailGeneration, placesFree);
+    renderReminderStatus(id, detailGeneration);
 
     let buttonText = 'Присоединиться';
     let actionType = 'join';
@@ -1905,6 +1943,7 @@ window.openEvent = async (id) => {
     actionBtn.classList.toggle("is-full", eventIsFull);
     if (eventIsFull) actionBtn.textContent = "Мест нет";
     if (eventIsFull) showWaitlistJoin(id, detailGeneration);
+    showReminderSubscribe(id, detailGeneration);
 
     actionBtn.onclick = async () => {
         if (actionBtn.disabled) { notifyUser("В событии больше нет свободных мест"); return; }
