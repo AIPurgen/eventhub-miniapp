@@ -513,6 +513,11 @@
 /* Social guest stepper: one clear decision, one compact control. */
 .guest-block{margin:26px 0 30px!important;padding:16px 14px 14px!important;border:1px solid var(--gray)!important;border-radius:22px!important;background:var(--event-soft,var(--lightgray))!important}.guest-hint{margin:0 0 14px!important;color:var(--text)!important;font-size:13px!important;font-weight:800!important;text-align:left!important}.guest-hint:before{content:'👥  ';color:var(--event-accent,var(--accent))}.guest-controls{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}.guest-control{width:48px!important;height:48px!important;flex:0 0 48px!important;border:1px solid color-mix(in srgb,var(--event-accent,var(--accent)) 22%,var(--gray))!important;border-radius:16px!important;background:var(--card)!important;color:var(--event-accent,var(--accent))!important;font-size:25px!important;font-weight:700!important;box-shadow:0 6px 14px rgba(32,36,58,.08)!important}.guest-count{position:relative!important;min-width:82px!important;color:var(--text)!important;font-size:30px!important;font-weight:950!important;line-height:1!important;text-align:center!important}.guest-count:after{content:'гостей';display:block;margin-top:5px;color:var(--secondary);font-size:11px;font-weight:700;letter-spacing:.02em}.guest-controls:after{content:'Вы + гости';display:block;position:absolute;opacity:0;width:0;height:0}
 @media(max-width:380px){.event-detail-actions{gap:5px!important;padding-left:7px!important;padding-right:7px!important}.event-detail-actions .social-actions{gap:5px!important}.event-detail-actions .social-actions .social-action,.event-detail-actions>.event-detail-action,.event-detail-actions>.event-detail-menu{height:56px!important;min-height:56px!important;border-radius:15px!important;font-size:10px!important}.event-detail-actions small{font-size:9px!important}.guest-block{margin-left:0!important;margin-right:0!important}.guest-control{width:44px!important;height:44px!important;flex-basis:44px!important}.guest-count{font-size:28px!important}}
+.event-followup-checkbox-panel{margin-top:18px;padding:14px 16px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray)}
+.event-followup-checkbox-label{display:flex;align-items:center;gap:11px;min-height:28px;color:var(--text);font-size:15px;font-weight:700;cursor:pointer}
+.event-followup-checkbox-label input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:var(--accent);cursor:pointer}
+.event-followup-checkbox-label input:disabled{cursor:wait;opacity:.65}
+.event-followup-checkbox-hint{margin:6px 0 0 31px;color:var(--secondary);font-size:12px;line-height:1.35}
 </style></head>
 <body>
 <div id="authShell" class="auth-shell hidden">
@@ -1271,11 +1276,20 @@ async function renderFollowupStatus(eventId,detailGeneration,isJoined){
   const detailInfo=document.getElementById('detailInfo'); if(!detailInfo||detailGeneration!==eventDetailGeneration||!isJoined)return;
   document.getElementById('eventFollowupPanel')?.remove();
   const result=await followupRequest('status',eventId); if(detailGeneration!==eventDetailGeneration||result.ok===false)return;
-  const data=result.data||result; const panel=document.createElement('div'); panel.id='eventFollowupPanel'; panel.className='event-description-block'; panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
-  const title=document.createElement('div'); title.className='event-section-label'; title.textContent='Сообщения после встречи'; panel.appendChild(title);
-  const text=document.createElement('div'); text.style.cssText='margin-top:6px;color:var(--secondary);font-size:13px;line-height:1.4;'; text.textContent='Получить один вопрос для отзыва после завершения события. Сообщения можно отключить в любой момент.'; panel.appendChild(text);
-  const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.style.marginTop='10px'; const opted=Boolean(data.opted_in); button.textContent=opted?'Не присылать сообщения':'Получать сообщение после встречи';
-  button.onclick=async()=>{button.disabled=true;const next=await followupRequest(opted?'unsubscribe':'subscribe',eventId);if(next.ok!==false){showToast(opted?'Сообщения отключены':'Подписка включена','success');await renderFollowupStatus(eventId,detailGeneration,isJoined);}else{button.disabled=false;notifyUser(next.error||'Не удалось изменить подписку');}}; panel.appendChild(button); detailInfo.appendChild(panel);
+  const data=result.data||result; const panel=document.createElement('div'); panel.id='eventFollowupPanel'; panel.className='event-followup-checkbox-panel';
+  const label=document.createElement('label'); label.className='event-followup-checkbox-label';
+  const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=Boolean(data.opted_in); checkbox.setAttribute('aria-label','Хочу получать уведомления');
+  const text=document.createElement('span'); text.textContent='Хочу получать уведомления';
+  label.append(checkbox,text); panel.appendChild(label);
+  const hint=document.createElement('div'); hint.className='event-followup-checkbox-hint'; hint.textContent='Одно сообщение после завершения события'; panel.appendChild(hint);
+  checkbox.addEventListener('change',async()=>{
+    checkbox.disabled=true;
+    const next=await followupRequest(checkbox.checked?'subscribe':'unsubscribe',eventId);
+    if(next.ok!==false){showToast(checkbox.checked?'Уведомления включены':'Уведомления отключены','success');}
+    else{checkbox.checked=!checkbox.checked;notifyUser(next.error||'Не удалось изменить настройку');}
+    checkbox.disabled=false;
+  });
+  detailInfo.appendChild(panel);
 }
 function showReminderSubscribe(eventId, detailGeneration){
   if(detailGeneration !== eventDetailGeneration) return;
@@ -1670,7 +1684,7 @@ function userIsAdmin(account) {
 }
 function syncAdminVisibility() {
   const visible = Boolean(isAdmin);
-  ['fab', 'adminBadge', 'organizerDashboardButton'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !visible));
+  ['fab', 'adminBadge'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !visible));
   document.querySelector('[data-pulse-nav="organizer"]')?.classList.toggle('hidden', !visible);
 }
 async function authRequest(mode) { const data = { login: document.getElementById('authLogin').value.trim(), password: document.getElementById('authPassword').value, first_name: document.getElementById('authFirstName').value.trim(), last_name: document.getElementById('authLastName').value.trim() }; const result = await api('auth', mode, data); const account = authUserFromResponse(result); if (!account?.access_token) { showAuthError(mode === 'register' ? 'Не удалось создать аккаунт' : 'Неверный логин или пароль'); return false; } accessToken = account.access_token; sessionStorage.setItem('eventhub_access_token', accessToken); user = account; return true; }
@@ -2304,10 +2318,10 @@ void bootstrapMiniApp();
     if(document.getElementById('organizerDashboard'))return true;
     const hero=document.querySelector('.pulse-hero')||document.querySelector('.header');
     if(!hero)return false;
-    hero.insertAdjacentHTML('afterend','<button id="organizerDashboardButton" class="organizer-dashboard-button" type="button" onclick="openOrganizerDashboard()">Панель организатора · аналитика</button><section id="organizerDashboard" class="organizer-dashboard"><div class="organizer-dashboard-head"><div class="organizer-dashboard-title">Мои события</div><button class="organizer-dashboard-close" type="button" onclick="closeOrganizerDashboard()">Закрыть</button></div><div class="organizer-dashboard-summary"></div><div class="organizer-dashboard-list"></div></section>');
+    hero.insertAdjacentHTML('afterend','<section id="organizerDashboard" class="organizer-dashboard"><div class="organizer-dashboard-head"><div class="organizer-dashboard-title">Мои события</div><button class="organizer-dashboard-close" type="button" onclick="closeOrganizerDashboard()">Закрыть</button></div><div class="organizer-dashboard-summary"></div><div class="organizer-dashboard-list"></div></section>');
     return true;
   };
-  const syncVisibility=()=>{const button=document.getElementById('organizerDashboardButton');if(button)button.style.display=isAdmin?'block':'none';};
+  const syncVisibility=()=>{};
   const tryMount=()=>{if(mountDashboard())syncVisibility();};
   tryMount();
   syncOrganizerNav();
