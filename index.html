@@ -2005,6 +2005,10 @@ async function bootstrapMiniApp() {
     // only produce a backend rejection and makes the client appear to loop.
     renderOwnerProfile();
     renderEventsState();
+    const eventsList = document.getElementById('eventsList');
+    if (eventsList && eventsList.querySelector('.skeleton-list')) {
+      eventsList.innerHTML = '<div class="empty"><h3>Откройте Mini App из Telegram</h3><p>Для загрузки событий нужны подписанные данные Telegram.</p></div>';
+    }
     telegramBootstrapStarted = true;
     showAuthError('Telegram не передал подписанные данные Mini App. Закройте окно и откройте приложение из Telegram ещё раз.');
     if (telegramBootstrapTimer) { clearInterval(telegramBootstrapTimer); telegramBootstrapTimer = null; }
