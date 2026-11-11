@@ -13,6 +13,8 @@
 - Telegram BotFather Mini App URL: `https://aipurgen.github.io/eventhub-miniapp/`
 - Telegram menu button URL: `https://aipurgen.github.io/eventhub-miniapp/`
 - Фактический entrypoint Mini App — GitHub Pages; запуск не идёт через n8n HTML.
+- В BotFather и в Telegram menu button **нельзя указывать n8n webhook URL**. Например, `https://n8n.arima.ru/webhook/eventhub-followup-api-4d7a2c` — это внутренний POST API, а не страница Mini App; при открытии через GET он корректно возвращает 404 `This webhook is not registered for GET requests`.
+- Follow-up, attendance и social webhook URLs используются только из JavaScript frontend через `POST` и не являются URL запуска Mini App.
 - Исходный файл: `C:\Downloads\123\LK_Client\github-pages\index.html`
 - Основной документ: `C:\Downloads\123\LK_Client\github-pages\ARCHITECTURE.md`
 - Frontend — один статический HTML-файл с CSS и JavaScript внутри.
