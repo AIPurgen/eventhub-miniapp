@@ -1845,6 +1845,97 @@ async function init(forceTelegramMode = false) {
     return appInitInFlight;
 }
 
+function calendarEventKey(ev) {
+    return String(ev?.id || ev?.event_id || ev?.title || 'event');
+}
+
+function calendarDate(value, fallback = null) {
+    const date = value ? new Date(value) : fallback;
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+function icsDate(date) {
+    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function icsEscape(value) {
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/([;,])/g, '\\$1')
+        .replace(/\r?\n/g, '\\n');
+}
+
+function calendarReminderLabel(ev) {
+    const title = String(ev?.title || 'событии');
+    return 'Напоминание: проверьте запись и подготовьтесь к событию «' + title + '»';
+}
+
+function isEventInCalendar(ev) {
+    try {
+        const saved = JSON.parse(localStorage.getItem('eventhub_calendar_events') || '{}');
+        return Boolean(saved[calendarEventKey(ev)]);
+    } catch (_) {
+        return false;
+    }
+}
+
+function addEventToCalendar(ev) {
+    const start = calendarDate(ev?.event_date || ev?.event_time || ev?.date);
+    if (!start) {
+        notifyUser('Не удалось определить дату события');
+        return false;
+    }
+    const end = calendarDate(ev?.event_end || ev?.end_date || ev?.end_time) || new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const title = String(ev?.title || 'Событие EventHub');
+    const location = String(ev?.location || ev?.address || '');
+    const description = [
+        String(ev?.description || '').trim(),
+        location ? 'Место: ' + location : '',
+        'Напоминание установлено за 1 день до события.'
+    ].filter(Boolean).join('\n');
+    const uid = 'eventhub-' + calendarEventKey(ev).replace(/[^a-zA-Z0-9._-]/g, '-') + '@vkor2105_bot';
+    const body = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//VKOR//EventHub//RU',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        'UID:' + icsEscape(uid),
+        'DTSTAMP:' + icsDate(new Date()),
+        'DTSTART:' + icsDate(start),
+        'DTEND:' + icsDate(end),
+        'SUMMARY:' + icsEscape(title),
+        'LOCATION:' + icsEscape(location),
+        'DESCRIPTION:' + icsEscape(description),
+        'BEGIN:VALARM',
+        'ACTION:DISPLAY',
+        'TRIGGER:-P1D',
+        'DESCRIPTION:' + icsEscape(calendarReminderLabel(ev)),
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = (title.replace(/[^\wа-яё\s-]/gi, '').trim() || 'eventhub-event') + '.ics';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    try {
+        const saved = JSON.parse(localStorage.getItem('eventhub_calendar_events') || '{}');
+        saved[calendarEventKey(ev)] = { title, start: start.toISOString(), added_at: new Date().toISOString(), reminder: 'P1D' };
+        localStorage.setItem('eventhub_calendar_events', JSON.stringify(saved));
+    } catch (_) {}
+    showToast('Календарь открыт: напоминание за 1 день', 'success');
+    return true;
+}
+
 function render() {
     const list = document.getElementById('eventsList');
     if (!events.length) {
@@ -2306,7 +2397,10 @@ void bootstrapMiniApp();
       card.dataset.pulseReady='1'; const title=card.querySelector('.event-title')?.textContent||''; const id=(card.getAttribute('onclick')||'').match(/openEvent\('([^']+)/)?.[1] || title;
       const media=document.createElement('div'); media.className='pulse-media'; media.innerHTML='<span>✦ подборка события</span>'; const copy=card.querySelector('.event-copy'); if(copy) copy.prepend(media);
       const tools=document.createElement('div'); tools.className='pulse-card-tools'; tools.innerHTML='<button class="pulse-card-tool" data-pulse-action="like">♡ Нравится</button><button class="pulse-card-tool" data-pulse-action="save">☆ Сохранить</button><button class="pulse-card-tool" data-pulse-action="calendar">🗓 В календарь</button>'; copy?.appendChild(tools);
-      tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='calendar'){const ev=events.find(item=>String(item.id)===String(id)); if(ev) addEventToCalendar(ev);} sync(); });
+      const calendarButton = tools.querySelector('[data-pulse-action="calendar"]');
+      const calendarEvent = events.find(item=>String(item.id)===String(id));
+      if (calendarButton && calendarEvent && isEventInCalendar(calendarEvent)) { calendarButton.classList.add('is-liked'); calendarButton.textContent='✓ В календаре'; }
+      tools.addEventListener('click', e => { const btn=e.target.closest('button'); if(!btn)return; e.preventDefault(); e.stopPropagation(); const action=btn.dataset.pulseAction; if(action==='like'){liked.has(id)?liked.delete(id):liked.add(id);btn.classList.toggle('is-liked',liked.has(id));btn.textContent=liked.has(id)?'♥ Лайк':'♡ Лайк';toast(liked.has(id)?'Добавлено в понравившееся':'Лайк убран');} if(action==='save'){favorites.has(id)?favorites.delete(id):favorites.add(id);btn.classList.toggle('is-liked',favorites.has(id));btn.textContent=favorites.has(id)?'★ Сохранено':'☆ Сохранить';toast(favorites.has(id)?'Событие сохранено':'Удалено из избранного');} if(action==='calendar'){const ev=events.find(item=>String(item.id)===String(id)); if(ev && addEventToCalendar(ev)){btn.classList.add('is-liked');btn.textContent='✓ В календаре';}} sync(); });
       if(liked.has(id)){tools.children[0].classList.add('is-liked');tools.children[0].textContent='♥ Лайк';} if(favorites.has(id)){tools.children[1].classList.add('is-liked');tools.children[1].textContent='★ Сохранено';}
     });
   const cards = [...list.querySelectorAll('.event-card')];
