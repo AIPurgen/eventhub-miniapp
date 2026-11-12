@@ -1364,11 +1364,17 @@ async function renderAttendanceList(ev, detailGeneration){
   }
   panel.appendChild(list); detailInfo.appendChild(panel);
 }
-function showAttendanceManage(ev, detailGeneration){
-  if(!canManageAttendance(ev) || detailGeneration!==eventDetailGeneration)return;
-  const actions=document.querySelector('.event-detail-actions'); if(!actions || document.getElementById('eventAttendanceManage'))return;
-  const button=document.createElement('button'); button.id='eventAttendanceManage'; button.type='button'; button.className='event-detail-action'; button.textContent='Посещаемость'; button.style.marginTop='10px';
-  button.onclick=()=>renderAttendanceList(ev,detailGeneration); actions.appendChild(button);
+function confirmationStatusValue(response){
+  const value=webhookValue(response,['result','confirmation_status']);
+  if(value && typeof value==='object' && value.result && typeof value.result==='object') return value.result;
+  return value && typeof value==='object' ? value : null;
+}
+async function loadConfirmedParticipantIds(eventId){
+  try{
+    const response=await api('events','confirmation_status',{event_id:eventId});
+    const value=confirmationStatusValue(response);
+    return new Set((Array.isArray(value?.confirmed_user_ids)?value.confirmed_user_ids:[]).map(id=>String(id)));
+  }catch(_){ return new Set(); }
 }
 async function shareEvent(eventId){
   const ev = events.find(item => String(item.id) === String(eventId));
@@ -1920,6 +1926,7 @@ window.openEvent = async (id) => {
     }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const participants = Array.isArray(ev.participants) ? ev.participants : [];
+    const confirmedParticipantIds = await loadConfirmedParticipantIds(id);
     const currentUserParticipant = participants.find(p => String(p?.id) === String(user?.id));
     const isJoined = !!currentUserParticipant;
 
@@ -1988,6 +1995,15 @@ window.openEvent = async (id) => {
             }
             wrapper.appendChild(avatarDiv);
 
+            if (confirmedParticipantIds.has(String(p?.id || p?.user_id))) {
+                const confirmedBadge = document.createElement('span');
+                confirmedBadge.textContent = '✓';
+                confirmedBadge.setAttribute('aria-label', 'Подтвердил участие');
+                confirmedBadge.title = 'Подтвердил участие';
+                confirmedBadge.style.cssText = 'position:absolute;right:-2px;top:-2px;width:24px;height:24px;border-radius:50%;background:#21a366;color:#fff;border:3px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;line-height:1;box-shadow:0 2px 7px rgba(0,0,0,.22);z-index:2;';
+                wrapper.appendChild(confirmedBadge);
+            }
+
             const gs = Number(p.guest_slots || 0);
             if (gs > 0) {
                 const badge = document.createElement('div');
@@ -2025,7 +2041,6 @@ window.openEvent = async (id) => {
     renderWaitlistStatus(id, detailGeneration, placesFree);
     renderReminderStatus(id, detailGeneration, Boolean(isJoined));
     renderFollowupStatus(id, detailGeneration, Boolean(isJoined));
-    showAttendanceManage(ev, detailGeneration);
 
     let buttonText = 'Присоединиться';
     let actionType = 'join';
