@@ -1279,8 +1279,8 @@ async function renderReminderStatus(eventId, detailGeneration, isJoined=true){
   }
   const panel=document.createElement('div'); panel.id='eventReminderPanel'; panel.className='event-reminder-checkbox-panel';
   const label=document.createElement('label'); label.className='event-reminder-checkbox-label';
-  const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=active; checkbox.setAttribute('aria-label','Напомнить за 1 день');
-  const text=document.createElement('span'); text.textContent='Напомнить за 1 день'; label.append(checkbox,text); panel.appendChild(label);
+  const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=active; checkbox.setAttribute('aria-label','Напомнить');
+  const text=document.createElement('span'); text.textContent='Напомнить'; label.append(checkbox,text); panel.appendChild(label);
   const hint=document.createElement('div'); hint.className='event-reminder-checkbox-hint'; hint.textContent='Личное сообщение в Telegram за сутки до события'; panel.appendChild(hint);
   checkbox.addEventListener('change',async()=>{
     checkbox.disabled=true;
@@ -2046,8 +2046,6 @@ window.openEvent = async (id) => {
     actionBtn.classList.toggle("is-full", eventIsFull);
     if (eventIsFull) actionBtn.textContent = "Мест нет";
     if (eventIsFull) showWaitlistJoin(id, detailGeneration);
-    showReminderSubscribe(id, detailGeneration);
-
     actionBtn.onclick = async () => {
         if (actionBtn.disabled) { notifyUser("В событии больше нет свободных мест"); return; }
         if (rsvpInFlight.has(String(id))) return;
