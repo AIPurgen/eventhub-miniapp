@@ -518,6 +518,26 @@
 .event-followup-checkbox-label input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:var(--accent);cursor:pointer}
 .event-followup-checkbox-label input:disabled{cursor:wait;opacity:.65}
 .event-followup-checkbox-hint{margin:6px 0 0 31px;color:var(--secondary);font-size:12px;line-height:1.35}
+.event-reminder-checkbox-panel{margin-top:18px;padding:14px 16px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray)}
+.event-reminder-checkbox-label{display:flex;align-items:center;gap:11px;min-height:28px;color:var(--text);font-size:15px;font-weight:700;cursor:pointer}
+.event-reminder-checkbox-label input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:var(--accent);cursor:pointer}
+.event-reminder-checkbox-label input:disabled{cursor:wait;opacity:.65}
+.event-reminder-checkbox-hint{margin:6px 0 0 31px;color:var(--secondary);font-size:12px;line-height:1.35}
+.event-attendance-panel{margin-top:18px;padding:16px;border:1px solid var(--gray);border-radius:18px;background:var(--lightgray)}
+.event-attendance-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.event-attendance-title{color:var(--text);font-size:15px;font-weight:850}
+.event-attendance-count{color:var(--accent);font-size:13px;font-weight:850;white-space:nowrap}
+.event-attendance-help{margin-top:5px;color:var(--secondary);font-size:12px;line-height:1.4}
+.event-attendance-list{display:grid;gap:8px;margin-top:13px}
+.event-attendance-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;background:var(--card)}
+.event-attendance-avatar{width:38px;height:38px;flex:0 0 38px;border-radius:50%;overflow:hidden;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:850}
+.event-attendance-avatar img{width:100%;height:100%;object-fit:cover}
+.event-attendance-person{min-width:0;flex:1}
+.event-attendance-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:13px;font-weight:750}
+.event-attendance-status{margin-top:2px;color:var(--secondary);font-size:11px}
+.event-attendance-status.is-present{color:var(--green);font-weight:800}
+.event-attendance-check{flex:0 0 auto;border:0;border-radius:11px;padding:9px 11px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.event-attendance-check:disabled{opacity:.6;cursor:wait}
 </style></head>
 <body>
 <div id="authShell" class="auth-shell hidden">
@@ -1244,26 +1264,33 @@ function reminderPayloadValue(response){
 function localReminderTimezone(){
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (_) { return 'UTC'; }
 }
-async function renderReminderStatus(eventId, detailGeneration){
+async function renderReminderStatus(eventId, detailGeneration, isJoined=true){
   const detailInfo=document.getElementById('detailInfo');
   if(!detailInfo || detailGeneration !== eventDetailGeneration) return;
   document.getElementById('eventReminderPanel')?.remove();
+  if(!isJoined) return;
   const response=await api('events','reminder_status',{event_id:eventId});
   if(detailGeneration !== eventDetailGeneration) return;
-  const status=reminderPayloadValue(response);
-  if(!status || status.status === 'none') return;
-  const panel=document.createElement('div');
-  panel.id='eventReminderPanel'; panel.className='event-description-block';
-  panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
-  const title=document.createElement('div'); title.className='event-section-label';
-  title.textContent=status.status==='active' ? 'Напоминание включено' : 'Напоминание отключено'; panel.appendChild(title);
-  if(status.status==='active'){
-    const meta=document.createElement('div'); meta.style.cssText='margin-top:6px;color:var(--secondary);font-size:12px;';
-    meta.textContent='За '+Number(status.minutes_before||1440)+' мин. · '+String(status.timezone||localReminderTimezone()); panel.appendChild(meta);
-    const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.textContent='Отключить напоминание'; button.style.marginTop='10px';
-    button.onclick=async()=>{button.disabled=true;const result=await api('events','reminder_unsubscribe',{event_id:eventId});const value=reminderPayloadValue(result);if(value?.status==='cancelled'){notifyUser('Напоминание отключено');panel.remove();}else{button.disabled=false;notifyUser(result?.error||'Не удалось отключить напоминание');}};
-    panel.appendChild(button);
+  let status=reminderPayloadValue(response);
+  let active=Boolean(status && status.status==='active');
+  if(!active && (!status || status.status==='none')){
+    const auto=await api('events','reminder_subscribe',{event_id:eventId,minutes_before:1440,timezone:localReminderTimezone()});
+    status=reminderPayloadValue(auto); active=Boolean(status && status.status==='active');
   }
+  const panel=document.createElement('div'); panel.id='eventReminderPanel'; panel.className='event-reminder-checkbox-panel';
+  const label=document.createElement('label'); label.className='event-reminder-checkbox-label';
+  const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=active; checkbox.setAttribute('aria-label','Напомнить за 1 день');
+  const text=document.createElement('span'); text.textContent='Напомнить за 1 день'; label.append(checkbox,text); panel.appendChild(label);
+  const hint=document.createElement('div'); hint.className='event-reminder-checkbox-hint'; hint.textContent='Личное сообщение в Telegram за сутки до события'; panel.appendChild(hint);
+  checkbox.addEventListener('change',async()=>{
+    checkbox.disabled=true;
+    const action=checkbox.checked?'reminder_subscribe':'reminder_unsubscribe';
+    const result=await api('events',action,checkbox.checked?{event_id:eventId,minutes_before:1440,timezone:localReminderTimezone()}:{event_id:eventId});
+    const value=reminderPayloadValue(result); const success=checkbox.checked?value?.status==='active':value?.status==='cancelled';
+    if(success){showToast(checkbox.checked?'Напоминание включено':'Напоминание отключено','success');}
+    else{checkbox.checked=!checkbox.checked;notifyUser(value?.error||result?.error||'Не удалось изменить напоминание');}
+    checkbox.disabled=false;
+  });
   detailInfo.appendChild(panel);
 }
 const FOLLOWUP_API='https://n8n.arima.ru/webhook/eventhub-followup-api-4d7a2c';
@@ -1293,11 +1320,7 @@ async function renderFollowupStatus(eventId,detailGeneration,isJoined){
 }
 function showReminderSubscribe(eventId, detailGeneration){
   if(detailGeneration !== eventDetailGeneration) return;
-  const actions=document.querySelector('.event-detail-actions');
-  if(!actions || document.getElementById('eventReminderSubscribe')) return;
-  const button=document.createElement('button'); button.id='eventReminderSubscribe'; button.type='button'; button.className='event-detail-action'; button.textContent='Напомнить за сутки'; button.style.marginTop='10px';
-  button.onclick=async()=>{button.disabled=true;button.textContent='Сохраняем…';const result=await api('events','reminder_subscribe',{event_id:eventId,minutes_before:1440,timezone:localReminderTimezone()});const value=reminderPayloadValue(result);if(value?.status==='active'){button.remove();await renderReminderStatus(eventId,detailGeneration);}else{button.disabled=false;button.textContent='Напомнить за сутки';notifyUser(result?.error||'Не удалось включить напоминание');}};
-  actions.appendChild(button);
+  renderReminderStatus(eventId, detailGeneration);
 }
 function attendancePayloadValue(response){
   const value=webhookValue(response,['attendance_status','attendance_list','check_in_participant','check_out_participant']);
@@ -1314,15 +1337,30 @@ async function renderAttendanceList(ev, detailGeneration){
   if(detailGeneration!==eventDetailGeneration)return;
   const data=attendancePayloadValue(response);
   if(!data?.ok){notifyUser(data?.error==='attendance_forbidden'?'Недостаточно прав для посещаемости':(data?.error||'Не удалось загрузить посещаемость'));return;}
-  const panel=document.createElement('div'); panel.id='eventAttendancePanel'; panel.className='event-description-block'; panel.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--gray);border-radius:16px;background:var(--lightgray);';
-  const head=document.createElement('div'); head.className='event-section-label'; head.textContent='Посещаемость · '+data.items.filter(x=>x.status==='checked_in').length+'/'+data.items.length; panel.appendChild(head);
-  const list=document.createElement('div'); list.style.cssText='display:grid;gap:8px;margin-top:10px;';
+  const panel=document.createElement('div'); panel.id='eventAttendancePanel'; panel.className='event-attendance-panel';
+  const presentCount=data.items.filter(x=>x.status==='checked_in').length;
+  const head=document.createElement('div'); head.className='event-attendance-head';
+  const title=document.createElement('div'); title.className='event-attendance-title'; title.textContent='Посещаемость';
+  const count=document.createElement('div'); count.className='event-attendance-count'; count.textContent=presentCount+'/'+data.items.length+' пришли'; head.append(title,count); panel.appendChild(head);
+  const help=document.createElement('div'); help.className='event-attendance-help'; help.textContent='Отметьте тех, кто пришёл. Выход отмечать не нужно.'; panel.appendChild(help);
+  const list=document.createElement('div'); list.className='event-attendance-list';
   for(const item of (data.items||[])){
-    const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-radius:10px;background:var(--card);font-size:12px;';
-    const label=document.createElement('span'); label.textContent=String(item.user_id)+' · '+(item.status==='checked_in'?'пришёл':'не отмечен'); row.appendChild(label);
-    const button=document.createElement('button'); button.type='button'; button.className='btn-secondary'; button.textContent=item.status==='checked_in'?'Отметить выход':'Check-in';
-    button.onclick=async()=>{button.disabled=true;const action=item.status==='checked_in'?'attendance_check_out':'attendance_check_in';const result=await api('events',action,{event_id:ev.id,participant_id:item.user_id});const value=attendancePayloadValue(result);if(value?.ok){await renderAttendanceList(ev,detailGeneration);}else{button.disabled=false;notifyUser(value?.error||'Не удалось обновить посещаемость');}};
-    row.appendChild(button); list.appendChild(row);
+    const row=document.createElement('div'); row.className='event-attendance-row';
+    const avatar=document.createElement('div'); avatar.className='event-attendance-avatar';
+    const participant=(Array.isArray(ev.participants)?ev.participants:[]).find(p=>String(p?.id||p?.user_id)===String(item.user_id));
+    const initials=((participant?.first_name||item.first_name||'')[0]||'')+((participant?.last_name||item.last_name||'')[0]||'');
+    const photo=participant?.photo_url||participant?.userpic||item.photo_url||item.userpic;
+    if(photo){const img=document.createElement('img');img.src=photo;img.alt='';img.onerror=()=>{img.remove();avatar.textContent=initials||'?' };avatar.appendChild(img);}else avatar.textContent=initials||'?';
+    const person=document.createElement('div'); person.className='event-attendance-person';
+    const name=document.createElement('div'); name.className='event-attendance-name'; name.textContent=[participant?.first_name||item.first_name,participant?.last_name||item.last_name].filter(Boolean).join(' ')||participant?.username||item.username||'Участник'; person.appendChild(name);
+    const status=document.createElement('div'); status.className='event-attendance-status'+(item.status==='checked_in'?' is-present':''); status.textContent=item.status==='checked_in'?'Пришёл':'Ещё не отмечен'; person.appendChild(status);
+    row.append(avatar,person);
+    if(item.status!=='checked_in'){
+      const button=document.createElement('button'); button.type='button'; button.className='event-attendance-check'; button.textContent='Отметить, что пришёл';
+      button.onclick=async()=>{button.disabled=true;const result=await api('events','attendance_check_in',{event_id:ev.id,participant_id:item.user_id});const value=attendancePayloadValue(result);if(value?.ok){await renderAttendanceList(ev,detailGeneration);}else{button.disabled=false;notifyUser(value?.error||'Не удалось отметить посещение');}};
+      row.appendChild(button);
+    }
+    list.appendChild(row);
   }
   panel.appendChild(list); detailInfo.appendChild(panel);
 }
@@ -1985,7 +2023,7 @@ window.openEvent = async (id) => {
     renderSocialActions(ev, isJoined, placesFree);
     renderSocialStats(id);
     renderWaitlistStatus(id, detailGeneration, placesFree);
-    renderReminderStatus(id, detailGeneration);
+    renderReminderStatus(id, detailGeneration, Boolean(isJoined));
     renderFollowupStatus(id, detailGeneration, Boolean(isJoined));
     showAttendanceManage(ev, detailGeneration);
 
@@ -2025,6 +2063,7 @@ window.openEvent = async (id) => {
             res = await api("events", "leave", { event_id: id, user_id: user?.id });
             if (isWebhookSuccess(res, "leave_event")) {
                 succeeded = true;
+                await api('events','reminder_unsubscribe',{event_id:id}).catch(()=>{});
                 tg.showAlert("Вы отписались от события");
             } else {
                 tg.showAlert("Не удалось отписаться");
@@ -2041,6 +2080,7 @@ window.openEvent = async (id) => {
                 } else {
                     tg.showAlert("Вы записались!");
                 }
+                await api('events','reminder_subscribe',{event_id:id,minutes_before:1440,timezone:localReminderTimezone()}).catch(()=>{});
             } else {
                 notifyUser(/недостаточно мест|свободно:s*0|нет свободных мест/i.test(String(res?.error || res?.message || "")) ? "В событии больше нет свободных мест" : (res?.error || res?.message || "Не удалось выполнить действие"));
                 console.log("join ответ:", res);
